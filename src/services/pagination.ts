@@ -59,7 +59,7 @@ export async function autoPaginate<T>(
     } else {
       break;
     }
-  } while (true); // eslint-disable-line @typescript-eslint/no-unnecessary-condition
+  } while (true);
 
   return {
     results: allResults,

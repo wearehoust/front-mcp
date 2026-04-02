@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint 'src/**/*.ts'",
-    "type-check": "tsc --noEmit",
+    "type-check": "node --max-old-space-size=8192 ./node_modules/.bin/tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

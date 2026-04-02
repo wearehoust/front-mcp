@@ -34,6 +34,21 @@ export class TagsService {
     this.client = client;
   }
 
+  async execute(params: Record<string, unknown>): Promise<unknown> {
+    const action = params["action"] as string;
+    switch (action) {
+      case "list": return this.list(params as unknown as TagsListInput);
+      case "get": return this.get(params as unknown as TagsGetInput);
+      case "create": return this.create(params as unknown as TagsCreateInput);
+      case "update": return this.update(params as unknown as TagsUpdateInput);
+      case "delete": return this.delete(params as unknown as TagsDeleteInput);
+      case "list_children": return this.listChildren(params as unknown as TagsListChildrenInput);
+      case "create_child": return this.createChild(params as unknown as TagsCreateChildInput);
+      case "list_conversations": return this.listConversations(params as unknown as TagsListConversationsInput);
+      default: throw new Error(`Unknown action: ${action}`);
+    }
+  }
+
   async list(input: TagsListInput): Promise<PaginatedResponse<Tag>> {
     const params: Record<string, string> = {};
     if (input.page_token !== undefined) {

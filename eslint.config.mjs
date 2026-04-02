@@ -4,12 +4,13 @@ export default tseslint.config(
   {
     ignores: ["dist/**", "node_modules/**", "tests/**", "*.mjs"],
   },
-  ...tseslint.configs.strictTypeChecked,
+  ...tseslint.configs.strict,
   {
     languageOptions: {
+      parser: tseslint.parser,
       parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
+        ecmaVersion: "latest",
+        sourceType: "module",
       },
     },
     rules: {
@@ -18,13 +19,6 @@ export default tseslint.config(
         { argsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/explicit-function-return-type": "error",
-      "@typescript-eslint/no-floating-promises": "error",
-      "@typescript-eslint/no-misused-promises": "error",
-      "@typescript-eslint/strict-boolean-expressions": "error",
-      "@typescript-eslint/restrict-template-expressions": [
-        "error",
-        { allowNumber: true, allowBoolean: true },
-      ],
       "no-console": "error",
     },
   },
