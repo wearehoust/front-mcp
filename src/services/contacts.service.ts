@@ -47,6 +47,23 @@ export class ContactsService {
     this.client = client;
   }
 
+  async execute(params: Record<string, unknown>): Promise<unknown> {
+    const action = params["action"] as string;
+    const id = params["contact_id"] as string | undefined;
+    switch (action) {
+      case "list": return this.list(params as { page_token?: string; limit?: number; auto_paginate?: boolean; sort_by?: string; sort_order?: "asc" | "desc" });
+      case "get": return this.get(id ?? "");
+      case "create": return this.create(params as unknown as ContactCreateBody);
+      case "update": return this.update(id ?? "", params as unknown as ContactUpdateBody);
+      case "delete": return this.delete(id ?? "");
+      case "merge": return this.merge(params as unknown as ContactMergeBody);
+      case "list_conversations": return this.listConversations(id ?? "", params as { page_token?: string; limit?: number });
+      case "add_handle": return this.addHandle(id ?? "", params as unknown as AddHandleBody);
+      case "remove_handle": return this.removeHandle(id ?? "", params["handle_id"] as string ?? "");
+      default: throw new Error(`Unknown action: ${action}`);
+    }
+  }
+
   async list(params: {
     page_token?: string;
     limit?: number;

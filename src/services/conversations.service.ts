@@ -42,7 +42,13 @@ export class ConversationsService {
     this.client = client;
   }
 
-  async execute(params: ConversationsParams): Promise<unknown> {
+  async execute(params: ConversationsParams | Record<string, unknown>): Promise<unknown> {
+    // Allow Record<string, unknown> from tool layer — the switch narrows via action
+    const p = params as ConversationsParams;
+    return this.dispatch(p);
+  }
+
+  private async dispatch(params: ConversationsParams): Promise<unknown> {
     switch (params.action) {
       case "list":
         return this.list(params);

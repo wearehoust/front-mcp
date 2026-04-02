@@ -53,6 +53,21 @@ export class InboxesService {
     this.client = client;
   }
 
+  async execute(params: Record<string, unknown>): Promise<unknown> {
+    const action = params["action"] as string;
+    switch (action) {
+      case "list": return this.list(params as unknown as InboxesListInput);
+      case "get": return this.get(params as unknown as InboxesGetInput);
+      case "create": return this.create(params as unknown as InboxesCreateInput);
+      case "list_channels": return this.listChannels(params as unknown as InboxesListChannelsInput);
+      case "list_conversations": return this.listConversations(params as unknown as InboxesListConversationsInput);
+      case "list_access": return this.listAccess(params as unknown as InboxesListAccessInput);
+      case "grant_access": return this.grantAccess(params as unknown as InboxesGrantAccessInput);
+      case "revoke_access": return this.revokeAccess(params as unknown as InboxesRevokeAccessInput);
+      default: throw new Error(`Unknown action: ${action}`);
+    }
+  }
+
   async list(input: InboxesListInput): Promise<PaginatedResponse<Inbox>> {
     const params: Record<string, string> = {};
     if (input.page_token !== undefined) {

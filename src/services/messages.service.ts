@@ -31,6 +31,20 @@ export class MessagesService {
     this.client = client;
   }
 
+  async execute(params: Record<string, unknown>): Promise<unknown> {
+    const action = params["action"] as string;
+    switch (action) {
+      case "get": return this.get(params as unknown as GetMessageInput);
+      case "create": return this.create(params as unknown as CreateMessageInput);
+      case "reply": return this.reply(params as unknown as ReplyMessageInput);
+      case "import": return this.import(params as unknown as ImportMessageInput);
+      case "receive_custom": return this.receiveCustom(params as unknown as ReceiveCustomMessageInput);
+      case "get_seen_status": return this.getSeenStatus(params as unknown as GetSeenStatusInput);
+      case "mark_seen": return this.markSeen(params as unknown as MarkSeenInput);
+      default: throw new Error(`Unknown action: ${action}`);
+    }
+  }
+
   async get(input: GetMessageInput): Promise<FrontMessage> {
     return this.client.get<FrontMessage>(`/messages/${input.message_id}`);
   }
