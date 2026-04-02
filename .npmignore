@@ -1,0 +1,15 @@
+tests/
+specs/
+docs/
+config/
+coverage/
+.github/
+*.test.ts
+*.spec.ts
+vitest.config.ts
+eslint.config.mjs
+tsconfig.json
+.gitignore
+.env
+.env.*
+MASTER_PROMPT.md
