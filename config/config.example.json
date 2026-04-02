@@ -1,0 +1,33 @@
+{
+  "auth": {
+    "method": "api_token",
+    "oauth": {
+      "client_id": "your-front-app-client-id",
+      "client_secret_env": "FRONT_MCP_OAUTH_SECRET",
+      "redirect_port": 9876,
+      "scopes": ["shared:*:read", "shared:*:write"]
+    },
+    "api_token_env": "FRONT_API_TOKEN"
+  },
+  "logging": {
+    "level": "info",
+    "redact_fields": ["phone", "email", "password", "access_token", "refresh_token", "client_secret"]
+  },
+  "rate_limit": {
+    "proactive_delay_threshold": 0.1,
+    "max_retries": 3,
+    "backoff_base_ms": 1000,
+    "backoff_max_ms": 60000
+  },
+  "pagination": {
+    "default_limit": 50,
+    "max_auto_paginate_pages": 10
+  },
+  "sanitization": {
+    "enabled": true,
+    "redacted_fields": [],
+    "redacted_patterns": [],
+    "replacement_text": "[REDACTED]"
+  },
+  "policy_file": ""
+}
