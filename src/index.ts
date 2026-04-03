@@ -37,7 +37,11 @@ async function handleAuth(config: ReturnType<typeof loadConfig>, logger: Logger)
   process.stderr.write("Authentication successful!\n");
 }
 
-const VERSION = "1.0.0";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8")) as { version: string };
+const VERSION = pkg.version;
 
 const HELP_TEXT = `front-mcp — Secure MCP server for the Front Platform API
 

@@ -2,6 +2,9 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { loadTokens } from "./client/token-store.js";
+import { OAuthManager } from "./client/oauth.js";
+import { Logger } from "./utils/logger.js";
+import { loadConfig } from "./utils/config.js";
 import { getAllActionTiers } from "./policy/default-policy.js";
 
 export interface DiagnosticResult {
@@ -39,22 +42,52 @@ export async function runDiagnostics(): Promise<DiagnosticResult[]> {
       : "No config file found (using defaults). Create ~/.front-mcp/config.json for custom settings.",
   });
 
-  // 3. Authentication
+  // 3. Authentication — resolve a valid token through the proper auth flow
   const apiToken = process.env["FRONT_API_TOKEN"];
   const hasApiToken = typeof apiToken === "string" && apiToken.length > 0;
   const oauthTokens = await loadTokens();
   const hasOAuth = oauthTokens !== null;
+  let resolvedToken: string | null = null;
 
   if (hasOAuth) {
     const expired = Date.now() >= oauthTokens.expires_at;
-    results.push({
-      name: "Authentication",
-      status: expired ? "warn" : "pass",
-      message: expired
-        ? "OAuth tokens found but access token expired. Will refresh automatically."
-        : "OAuth tokens found and valid.",
-    });
+
+    if (expired) {
+      // Try to refresh through OAuthManager
+      try {
+        const config = loadConfig();
+        const oauthConfig = {
+          clientId: config.auth.oauth.client_id,
+          clientSecret: process.env[config.auth.oauth.client_secret_env] ?? "",
+          redirectPort: config.auth.oauth.redirect_port,
+          scopes: config.auth.oauth.scopes,
+        };
+        const logger = new Logger("error");
+        const oauth = new OAuthManager(oauthConfig, logger);
+        resolvedToken = await oauth.getToken();
+        results.push({
+          name: "Authentication",
+          status: "pass",
+          message: "OAuth tokens refreshed successfully.",
+        });
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : "Unknown error";
+        results.push({
+          name: "Authentication",
+          status: "fail",
+          message: `OAuth token refresh failed: ${msg}. Run 'front-mcp auth' to re-authenticate.`,
+        });
+      }
+    } else {
+      resolvedToken = oauthTokens.access_token;
+      results.push({
+        name: "Authentication",
+        status: "pass",
+        message: "OAuth tokens found and valid.",
+      });
+    }
   } else if (hasApiToken) {
+    resolvedToken = apiToken;
     results.push({
       name: "Authentication",
       status: "warn",
@@ -91,12 +124,11 @@ export async function runDiagnostics(): Promise<DiagnosticResult[]> {
     message: `${String(toolCount)} tools, ${String(actionCount)} actions registered.`,
   });
 
-  // 6. Front API connectivity
-  if (hasOAuth || hasApiToken) {
+  // 6. Front API connectivity — use the resolved (possibly refreshed) token
+  if (resolvedToken !== null) {
     try {
-      const token = hasOAuth ? oauthTokens.access_token : (apiToken ?? "");
       const response = await fetch("https://api2.frontapp.com/me", {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: { Authorization: `Bearer ${resolvedToken}`, Accept: "application/json" },
       });
       if (response.ok) {
         results.push({
@@ -123,7 +155,7 @@ export async function runDiagnostics(): Promise<DiagnosticResult[]> {
     results.push({
       name: "Front API connectivity",
       status: "fail",
-      message: "Skipped — no credentials configured.",
+      message: "Skipped — no valid credentials available.",
     });
   }
 
