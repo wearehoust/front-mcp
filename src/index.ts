@@ -61,7 +61,7 @@ async function main(): Promise<void> {
       authProvider = new OAuthManager(oauthConfig, logger);
       logger.info("Using OAuth authentication.");
     } else {
-      logger.error("OAuth configured but no tokens found. Run 'front-mcp auth' first.");
+      logger.error("OAuth configured but no tokens found. Run 'front-mcp auth' first, or switch to API token by setting FRONT_API_TOKEN.");
       process.exit(1);
     }
   } else {
@@ -95,6 +95,13 @@ async function main(): Promise<void> {
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : "Unknown error";
-  process.stderr.write(`Fatal error: ${message}\n`);
+  const isDebug =
+    process.env["LOG_LEVEL"] === "debug" ||
+    process.env["FRONT_MCP_LOG_LEVEL"] === "debug";
+  if (isDebug && error instanceof Error && typeof error.stack === "string") {
+    process.stderr.write(`Fatal error: ${message}\n${error.stack}\n`);
+  } else {
+    process.stderr.write(`Fatal error: ${message}\n`);
+  }
   process.exit(1);
 });

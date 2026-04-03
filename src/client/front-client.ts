@@ -106,8 +106,25 @@ export class FrontClient {
           body: body !== undefined ? JSON.stringify(body) : undefined,
         });
       } catch (error: unknown) {
-        const message =
+        const rawMessage =
           error instanceof Error ? error.message : "Unknown network error";
+        const code =
+          error !== null &&
+          typeof error === "object" &&
+          "code" in error &&
+          typeof (error as Record<string, unknown>)["code"] === "string"
+            ? ((error as Record<string, unknown>)["code"] as string)
+            : undefined;
+        let message: string;
+        if (code === "ENOTFOUND") {
+          message = `Could not resolve host — check your internet connection and that api2.frontapp.com is reachable.`;
+        } else if (code === "ECONNREFUSED") {
+          message = `Connection refused by api2.frontapp.com — the server may be down or a firewall is blocking the request.`;
+        } else if (code === "ETIMEDOUT") {
+          message = `Connection timed out reaching api2.frontapp.com — check your network and try again.`;
+        } else {
+          message = rawMessage;
+        }
         throw new NetworkError(`Network error: ${message}`, error);
       }
 

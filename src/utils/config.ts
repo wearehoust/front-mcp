@@ -67,7 +67,14 @@ function loadConfigFile(): Record<string, unknown> {
   for (const configPath of getConfigPaths()) {
     if (existsSync(configPath)) {
       const raw = readFileSync(configPath, "utf-8");
-      return JSON.parse(raw) as Record<string, unknown>;
+      try {
+        return JSON.parse(raw) as Record<string, unknown>;
+      } catch {
+        throw new Error(
+          `Failed to parse config file at ${configPath}: invalid JSON. ` +
+          `Check the file for syntax errors (trailing commas, missing quotes, etc.).`,
+        );
+      }
     }
   }
   return {};
