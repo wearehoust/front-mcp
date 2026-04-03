@@ -34,16 +34,15 @@ describe("CustomFieldsService", () => {
   // listForAccounts
   // ---------------------------------------------------------------------------
   describe("listForAccounts", () => {
-    it("returns fields from GET /accounts/{id}/custom_fields", async () => {
+    it("returns fields from GET /accounts/custom_fields", async () => {
       server.use(
-        http.get(`${BASE}/accounts/acc_123/custom_fields`, () =>
+        http.get(`${BASE}/accounts/custom_fields`, () =>
           HttpResponse.json({ _results: [sampleField], _pagination: {} }),
         ),
       );
 
       const result = await service.listForAccounts({
         action: "list_for_accounts",
-        account_id: "acc_123",
       });
       expect(result.results).toHaveLength(1);
       expect(result.results[0]?.id).toBe("cf_123");
@@ -52,7 +51,7 @@ describe("CustomFieldsService", () => {
     it("passes page_token and limit as query params", async () => {
       let capturedUrl = "";
       server.use(
-        http.get(`${BASE}/accounts/acc_123/custom_fields`, ({ request }) => {
+        http.get(`${BASE}/accounts/custom_fields`, ({ request }) => {
           capturedUrl = request.url;
           return HttpResponse.json({ _results: [], _pagination: {} });
         }),
@@ -60,7 +59,6 @@ describe("CustomFieldsService", () => {
 
       await service.listForAccounts({
         action: "list_for_accounts",
-        account_id: "acc_123",
         page_token: "tok_cf",
         limit: 20,
       });
@@ -71,13 +69,13 @@ describe("CustomFieldsService", () => {
     it("auto-paginates when auto_paginate is true", async () => {
       let callCount = 0;
       server.use(
-        http.get(`${BASE}/accounts/acc_123/custom_fields`, ({ request }) => {
+        http.get(`${BASE}/accounts/custom_fields`, ({ request }) => {
           callCount++;
           const url = new URL(request.url);
           if (url.searchParams.get("page_token") === null) {
             return HttpResponse.json({
               _results: [sampleField],
-              _pagination: { next: `${BASE}/accounts/acc_123/custom_fields?page_token=page2` },
+              _pagination: { next: `${BASE}/accounts/custom_fields?page_token=page2` },
             });
           }
           return HttpResponse.json({
@@ -89,7 +87,6 @@ describe("CustomFieldsService", () => {
 
       const result = await service.listForAccounts({
         action: "list_for_accounts",
-        account_id: "acc_123",
         auto_paginate: true,
       });
       expect(callCount).toBe(2);
@@ -134,16 +131,15 @@ describe("CustomFieldsService", () => {
   // listForInboxes
   // ---------------------------------------------------------------------------
   describe("listForInboxes", () => {
-    it("returns fields from GET /inboxes/{id}/custom_fields", async () => {
+    it("returns fields from GET /inboxes/custom_fields", async () => {
       server.use(
-        http.get(`${BASE}/inboxes/inb_123/custom_fields`, () =>
+        http.get(`${BASE}/inboxes/custom_fields`, () =>
           HttpResponse.json({ _results: [sampleField], _pagination: {} }),
         ),
       );
 
       const result = await service.listForInboxes({
         action: "list_for_inboxes",
-        inbox_id: "inb_123",
       });
       expect(result.results).toHaveLength(1);
       expect(result.results[0]?.id).toBe("cf_123");
@@ -152,7 +148,7 @@ describe("CustomFieldsService", () => {
     it("passes page_token and limit as query params", async () => {
       let capturedUrl = "";
       server.use(
-        http.get(`${BASE}/inboxes/inb_123/custom_fields`, ({ request }) => {
+        http.get(`${BASE}/inboxes/custom_fields`, ({ request }) => {
           capturedUrl = request.url;
           return HttpResponse.json({ _results: [], _pagination: {} });
         }),
@@ -160,7 +156,6 @@ describe("CustomFieldsService", () => {
 
       await service.listForInboxes({
         action: "list_for_inboxes",
-        inbox_id: "inb_123",
         page_token: "itok",
         limit: 15,
       });
@@ -189,16 +184,15 @@ describe("CustomFieldsService", () => {
   // listForTeammates
   // ---------------------------------------------------------------------------
   describe("listForTeammates", () => {
-    it("returns fields from GET /teammates/{id}/custom_fields", async () => {
+    it("returns fields from GET /teammates/custom_fields", async () => {
       server.use(
-        http.get(`${BASE}/teammates/tea_123/custom_fields`, () =>
+        http.get(`${BASE}/teammates/custom_fields`, () =>
           HttpResponse.json({ _results: [sampleField], _pagination: {} }),
         ),
       );
 
       const result = await service.listForTeammates({
         action: "list_for_teammates",
-        teammate_id: "tea_123",
       });
       expect(result.results).toHaveLength(1);
       expect(result.results[0]?.id).toBe("cf_123");
@@ -206,17 +200,16 @@ describe("CustomFieldsService", () => {
 
     it("returns next_page_token when more results exist", async () => {
       server.use(
-        http.get(`${BASE}/teammates/tea_123/custom_fields`, () =>
+        http.get(`${BASE}/teammates/custom_fields`, () =>
           HttpResponse.json({
             _results: [sampleField],
-            _pagination: { next: `${BASE}/teammates/tea_123/custom_fields?page_token=tnext` },
+            _pagination: { next: `${BASE}/teammates/custom_fields?page_token=tnext` },
           }),
         ),
       );
 
       const result = await service.listForTeammates({
         action: "list_for_teammates",
-        teammate_id: "tea_123",
       });
       expect(result.next_page_token).toBe("tnext");
     });

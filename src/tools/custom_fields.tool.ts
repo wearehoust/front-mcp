@@ -27,9 +27,6 @@ export function registerCustomFieldsTool(
     DESCRIPTION,
     {
       action: z.enum(["list_for_accounts", "list_for_contacts", "list_for_conversations", "list_for_inboxes", "list_for_links", "list_for_teammates"]).describe("The action to perform"),
-      account_id: z.string().optional(),
-      inbox_id: z.string().optional(),
-      teammate_id: z.string().optional(),
       page_token: z.string().optional(),
       limit: z.number().optional(),
       auto_paginate: z.boolean().optional(),

@@ -228,10 +228,9 @@ export class ConversationsService {
   }
 
   async delete(params: Extract<ConversationsParams, { action: "delete" }>): Promise<Record<string, never>> {
-    // Front does not have a true DELETE on conversations — soft-delete via PATCH status=deleted
-    return this.client.patch<Record<string, never>>(
+    // Permanently deletes a conversation. Must be in "trashed" status first.
+    return this.client.delete<Record<string, never>>(
       `/conversations/${params.conversation_id}`,
-      { status: "deleted" },
     );
   }
 
