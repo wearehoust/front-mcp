@@ -8,6 +8,7 @@ import { RateLimiter } from "./client/rate-limiter.js";
 import { OAuthManager } from "./client/oauth.js";
 import { loadTokens } from "./client/token-store.js";
 import { createServer } from "./server.js";
+import { runDiagnostics, formatDiagnostics } from "./doctor.js";
 import type { AuthProvider } from "./client/front-client.js";
 
 async function handleAuth(config: ReturnType<typeof loadConfig>, logger: Logger): Promise<void> {
@@ -49,6 +50,7 @@ Usage:
 Options:
   --version, -v   Show version number
   --help, -h      Show this help message
+  --doctor        Run diagnostics (check config, auth, connectivity)
 
 Environment variables:
   FRONT_API_TOKEN           API token for authentication (fallback)
@@ -73,6 +75,14 @@ async function main(): Promise<void> {
   if (args.includes("--help") || args.includes("-h")) {
     process.stderr.write(HELP_TEXT);
     return;
+  }
+
+  // Handle --doctor
+  if (args.includes("--doctor")) {
+    const results = await runDiagnostics();
+    process.stderr.write(formatDiagnostics(results));
+    const failures = results.filter((r) => r.status === "fail").length;
+    process.exit(failures > 0 ? 1 : 0);
   }
 
   const config = loadConfig();

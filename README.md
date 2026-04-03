@@ -1,8 +1,12 @@
 # Front MCP
 
 [![CI](https://github.com/wearehoust/front-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/wearehoust/front-mcp/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@houst-com/front-mcp.svg)](https://www.npmjs.com/package/@houst-com/front-mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm](https://img.shields.io/npm/v/@houst-com/front-mcp)](https://www.npmjs.com/package/@houst-com/front-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/node/v/@houst-com/front-mcp)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
+[![MCP](https://img.shields.io/badge/MCP-26_tools-green)](docs/TOOL_REFERENCE.md)
+[![Front API](https://img.shields.io/badge/Front_API-172_actions-orange)](https://dev.frontapp.com/reference)
 
 Use Front from any MCP-compatible client. Search conversations, manage contacts, send messages, tag, assign, and automate inbox workflows — 26 tools, 172 actions.
 
@@ -143,6 +147,8 @@ For API tokens, permissions are set when creating the token.
 | `teammates` | list, get, update, list_conversations, list_inboxes |
 | `teams` | list, get, add_teammates, remove_teammates |
 | `token_identity` | get |
+
+See [docs/TOOL_REFERENCE.md](docs/TOOL_REFERENCE.md) for the complete reference with policy tiers per action.
 
 ## Policy Engine
 

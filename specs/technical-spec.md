@@ -148,6 +148,31 @@ interface PolicyConfig {
                     └──────────────┘     └─────────────┘
 ```
 
+```mermaid
+sequenceDiagram
+    participant User as User
+    participant CLI as front-mcp auth
+    participant Browser as Browser
+    participant Front as Front OAuth
+    participant Store as Token Store
+
+    User->>CLI: front-mcp auth
+    CLI->>CLI: Generate self-signed cert
+    CLI->>CLI: Start HTTPS server on :9876
+    CLI-->>User: Open this URL in browser
+    User->>Browser: Open auth URL
+    Browser->>Front: GET /oauth/authorize
+    Front-->>Browser: Authorization page
+    User->>Front: Approve
+    Front-->>Browser: Redirect to localhost:9876/callback?code=xxx
+    Browser->>CLI: GET /callback?code=xxx
+    CLI->>Front: POST /oauth/token (Basic auth + code)
+    Front-->>CLI: { access_token, refresh_token }
+    CLI->>Store: Encrypt (AES-256-GCM) + save
+    Store->>Store: chmod 0600
+    CLI-->>User: Authentication successful!
+```
+
 **Token storage format:**
 
 ```json
@@ -272,6 +297,29 @@ LLM receives: { content: [{ type: "text", text: "Found 10 open conversations..."
                 structuredContent: { conversations: [...], next_page_token: "..." } }
 ```
 
+```mermaid
+sequenceDiagram
+    participant LLM as LLM Client
+    participant Tool as MCP Tool
+    participant Policy as Policy Engine
+    participant Service as Service Layer
+    participant Client as Front Client
+    participant API as Front API
+
+    LLM->>Tool: conversations { action: "list", limit: 10 }
+    Tool->>Policy: evaluate("conversations", "list")
+    Policy-->>Tool: allow (read tier)
+    Tool->>Service: conversations.list({ limit: 10 })
+    Service->>Client: GET /conversations?limit=10
+    Client->>Client: Rate limit check
+    Client->>API: HTTPS request + Bearer token
+    API-->>Client: 200 { _results: [...], _pagination: {...} }
+    Client-->>Service: parsed response
+    Service-->>Tool: { results: [...], next_page_token: "..." }
+    Tool->>Tool: sanitize output
+    Tool-->>LLM: { content: [summary, data] }
+```
+
 ### Write Operation with Confirmation
 
 ```
@@ -292,6 +340,27 @@ Policy Engine: confirm: true present -> allow execution
   │
   ▼
 Service -> Client -> Front API -> Response -> Formatted result
+```
+
+```mermaid
+sequenceDiagram
+    participant LLM as LLM Client
+    participant Tool as MCP Tool
+    participant Policy as Policy Engine
+    participant Service as Service Layer
+
+    LLM->>Tool: messages { action: "create", body: "Hello" }
+    Tool->>Policy: evaluate("messages", "create")
+    Policy-->>Tool: confirm (write tier)
+    Tool-->>LLM: "CONFIRMATION REQUIRED: Call again with confirm: true"
+
+    LLM->>Tool: messages { action: "create", body: "Hello", confirm: true }
+    Tool->>Policy: evaluate("messages", "create", confirm=true)
+    Policy->>Policy: check pending confirmation exists
+    Policy-->>Tool: allow
+    Tool->>Service: messages.create(...)
+    Service-->>Tool: result
+    Tool-->>LLM: { content: [summary, data] }
 ```
 
 ---

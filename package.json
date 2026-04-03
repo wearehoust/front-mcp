@@ -15,6 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "generate-docs": "node scripts/generate-tool-docs.js",
     "prepublishOnly": "npm run lint && npm run type-check && npm run test && npm run build"
   },
   "keywords": [

@@ -26,6 +26,20 @@ M1 (Project Scaffold + Client Layer)
        └──► M8 (Final polish)
 ```
 
+```mermaid
+graph TD
+    M1["M1: Scaffold + Client"] --> M2["M2: Policy Engine"]
+    M1 --> M3["M3: Core Services (5)"]
+    M1 --> M7["M7: OAuth"]
+    M2 --> M4["M4: Core Tools (5)"]
+    M3 --> M4
+    M3 --> M5["M5: Services (20)"]
+    M4 --> M6["M6: Tools (20)"]
+    M5 --> M6
+    M6 --> M8["M8: Docs + Polish"]
+    M7 --> M8
+```
+
 ---
 
 ## Milestone 1: Project Scaffold + Client Layer
