@@ -137,24 +137,24 @@ describe("ChannelsService", () => {
   });
 
   describe("create", () => {
-    it("sends POST /channels with type", async () => {
+    it("sends POST /inboxes/{inbox_id}/channels with type", async () => {
       let capturedBody: unknown;
       server.use(
-        http.post(`${BASE}/channels`, async ({ request }) => {
+        http.post(`${BASE}/inboxes/inb_1/channels`, async ({ request }) => {
           capturedBody = await request.json();
           return HttpResponse.json(sampleChannel, { status: 201 });
         }),
       );
 
-      const result = await service.create({ action: "create", type: "smtp" });
+      const result = await service.create({ action: "create", type: "smtp", inbox_id: "inb_1" });
       expect(capturedBody).toMatchObject({ type: "smtp" });
       expect(result.id).toBe("cha_123");
     });
 
-    it("includes optional name, settings, and inbox_id when provided", async () => {
+    it("includes optional name and settings in body (inbox_id is in the path)", async () => {
       let capturedBody: unknown;
       server.use(
-        http.post(`${BASE}/channels`, async ({ request }) => {
+        http.post(`${BASE}/inboxes/inb_1/channels`, async ({ request }) => {
           capturedBody = await request.json();
           return HttpResponse.json(sampleChannel, { status: 201 });
         }),
@@ -171,7 +171,6 @@ describe("ChannelsService", () => {
         type: "smtp",
         name: "New Channel",
         settings: { host: "smtp.acme.com" },
-        inbox_id: "inb_1",
       });
     });
   });

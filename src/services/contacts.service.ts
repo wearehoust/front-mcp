@@ -59,7 +59,7 @@ export class ContactsService {
       case "merge": return this.merge(params as unknown as ContactMergeBody);
       case "list_conversations": return this.listConversations(id ?? "", params as { page_token?: string; limit?: number });
       case "add_handle": return this.addHandle(id ?? "", params as unknown as AddHandleBody);
-      case "remove_handle": return this.removeHandle(id ?? "", params["handle_id"] as string ?? "");
+      case "remove_handle": return this.removeHandle(id ?? "", params["handle"] as string ?? "", params["source"] as string ?? "");
       default: throw new Error(`Unknown action: ${action}`);
     }
   }
@@ -142,10 +142,12 @@ export class ContactsService {
 
   async removeHandle(
     contactId: string,
-    handleId: string,
+    handle: string,
+    source: string,
   ): Promise<Record<string, never>> {
     return this.client.delete<Record<string, never>>(
-      `/contacts/${contactId}/handles/${handleId}`,
+      `/contacts/${contactId}/handles`,
+      { handle, source },
     );
   }
 }

@@ -292,11 +292,11 @@ describe("AccountsService", () => {
   });
 
   describe("removeContact", () => {
-    it("sends DELETE /accounts/{id}/contacts/{contact_id}", async () => {
-      let capturedUrl = "";
+    it("sends DELETE /accounts/{id}/contacts with contact_ids body", async () => {
+      let capturedBody: unknown;
       server.use(
-        http.delete(`${BASE}/accounts/acc_123/contacts/crd_abc`, ({ request }) => {
-          capturedUrl = request.url;
+        http.delete(`${BASE}/accounts/acc_123/contacts`, async ({ request }) => {
+          capturedBody = await request.json();
           return new HttpResponse(null, { status: 204 });
         }),
       );
@@ -306,7 +306,7 @@ describe("AccountsService", () => {
         account_id: "acc_123",
         contact_id: "crd_abc",
       });
-      expect(capturedUrl).toContain("/accounts/acc_123/contacts/crd_abc");
+      expect(capturedBody).toMatchObject({ contact_ids: ["crd_abc"] });
       expect(result).toEqual({});
     });
   });
