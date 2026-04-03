@@ -1,8 +1,12 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createServer as createHttpsServer } from "node:https";
+import { generateKeyPairSync } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { writeFileSync, readFileSync, unlinkSync } from "node:fs";
 import { URL } from "node:url";
 import { saveTokens, loadTokens, clearTokens, isTokenExpiringSoon, type StoredTokens } from "./token-store.js";
 import type { AuthProvider } from "./front-client.js";
 import { Logger } from "../utils/logger.js";
+import type { IncomingMessage, ServerResponse } from "node:http";
 
 const FRONT_AUTH_URL = "https://app.frontapp.com/oauth/authorize";
 const FRONT_TOKEN_URL = "https://app.frontapp.com/oauth/token";
@@ -21,6 +25,36 @@ interface TokenResponse {
   refresh_token: string;
   token_type: string;
   expires_in: number;
+}
+
+function generateSelfSignedCert(): { key: string; cert: string } {
+  const { privateKey } = generateKeyPairSync("rsa", {
+    modulusLength: 2048,
+    publicKeyEncoding: { type: "spki", format: "pem" },
+    privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  });
+
+  const keyFile = `/tmp/front-mcp-oauth-key-${String(process.pid)}.pem`;
+  const certFile = `/tmp/front-mcp-oauth-cert-${String(process.pid)}.pem`;
+
+  writeFileSync(keyFile, privateKey);
+
+  try {
+    execFileSync("openssl", [
+      "req", "-new", "-x509",
+      "-key", keyFile,
+      "-out", certFile,
+      "-days", "1",
+      "-subj", "/CN=localhost",
+      "-addext", "subjectAltName=DNS:localhost,IP:127.0.0.1",
+    ], { stdio: "pipe" });
+
+    const cert = readFileSync(certFile, "utf-8");
+    return { key: privateKey, cert };
+  } finally {
+    try { unlinkSync(keyFile); } catch { /* cleanup */ }
+    try { unlinkSync(certFile); } catch { /* cleanup */ }
+  }
 }
 
 export class OAuthManager implements AuthProvider {
@@ -44,13 +78,11 @@ export class OAuthManager implements AuthProvider {
       );
     }
 
-    // Check if access token is expired
     if (Date.now() >= this.tokens.expires_at) {
       this.logger.info("Access token expired, refreshing...");
       await this.refreshAccessToken();
     }
 
-    // Warn if refresh token is expiring soon (24 hours)
     if (isTokenExpiringSoon(this.tokens)) {
       this.logger.warn(
         "Refresh token expires within 24 hours. Run 'front-mcp auth' to re-authenticate.",
@@ -62,11 +94,14 @@ export class OAuthManager implements AuthProvider {
 
   async startAuthFlow(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      const redirectUri = `http://localhost:${this.config.redirectPort}/callback`;
+      const redirectUri = `https://localhost:${String(this.config.redirectPort)}/callback`;
 
-      const httpServer = createServer(
+      const tlsOptions = generateSelfSignedCert();
+
+      const httpsServer = createHttpsServer(
+        tlsOptions,
         (req: IncomingMessage, res: ServerResponse) => {
-          const url = new URL(req.url ?? "/", `http://localhost:${this.config.redirectPort}`);
+          const url = new URL(req.url ?? "/", `https://localhost:${String(this.config.redirectPort)}`);
 
           if (url.pathname === "/callback") {
             const code = url.searchParams.get("code");
@@ -74,8 +109,8 @@ export class OAuthManager implements AuthProvider {
 
             if (typeof error === "string") {
               res.writeHead(400, { "Content-Type": "text/html" });
-              res.end(`<h1>Authentication Failed</h1><p>${error}</p>`);
-              httpServer.close();
+              res.end("<h1>Authentication Failed</h1>");
+              httpsServer.close();
               reject(new Error(`OAuth error: ${error}`));
               return;
             }
@@ -83,7 +118,7 @@ export class OAuthManager implements AuthProvider {
             if (typeof code !== "string" || code.length === 0) {
               res.writeHead(400, { "Content-Type": "text/html" });
               res.end("<h1>Missing authorization code</h1>");
-              httpServer.close();
+              httpsServer.close();
               reject(new Error("No authorization code received"));
               return;
             }
@@ -92,18 +127,16 @@ export class OAuthManager implements AuthProvider {
             res.end(
               "<h1>Authentication Successful!</h1><p>You can close this window and return to the terminal.</p>",
             );
-            httpServer.close();
+            httpsServer.close();
 
             this.exchangeCode(code, redirectUri)
-              .then(() => {
-                resolve();
-              })
+              .then(() => { resolve(); })
               .catch(reject);
           }
         },
       );
 
-      httpServer.listen(this.config.redirectPort, () => {
+      httpsServer.listen(this.config.redirectPort, () => {
         const authUrl = new URL(FRONT_AUTH_URL);
         authUrl.searchParams.set("response_type", "code");
         authUrl.searchParams.set("client_id", this.config.clientId);
@@ -114,9 +147,13 @@ export class OAuthManager implements AuthProvider {
 
         this.logger.info("Open this URL in your browser to authenticate:");
         process.stderr.write(`\n  ${authUrl.toString()}\n\n`);
+        process.stderr.write(
+          "  Note: Your browser may warn about the self-signed certificate.\n" +
+          "  This is expected for localhost — click 'Advanced' and proceed.\n\n",
+        );
       });
 
-      httpServer.on("error", reject);
+      httpsServer.on("error", reject);
     });
   }
 
