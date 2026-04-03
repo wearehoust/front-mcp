@@ -57,7 +57,7 @@ Environment variables:
   FRONT_MCP_LOG_LEVEL       "error", "warn", "info", "debug" (default: info)
   FRONT_MCP_POLICY_FILE     Path to custom policy JSON file
 
-Documentation: https://github.com/jamesjenkinsyates/front-mcp-server
+Documentation: https://github.com/wearehoust/front-mcp-server
 `;
 
 async function main(): Promise<void> {
