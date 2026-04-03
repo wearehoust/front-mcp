@@ -247,7 +247,7 @@ graph TD
 2. Service implementation (all actions)
 3. Unit tests with fixtures
 
-**Note:** These follow the exact same pattern established in M3. Highly parallelizable — multiple resources can be implemented simultaneously by subagents.
+**Note:** These follow the exact same pattern established in M3. Highly parallelizable — multiple resources can be implemented simultaneously.
 
 ### Acceptance Criteria
 - All 20 services have complete action coverage
@@ -358,7 +358,7 @@ graph TD
 
 ### Parallelization Strategy
 
-Milestones 5 and 6 (remaining 20 resources) are highly parallelizable. Each resource (schema + service + tool + tests) is independent. These can be distributed across subagents:
+Milestones 5 and 6 (remaining 20 resources) are highly parallelizable. Each resource (schema + service + tool + tests) is independent. These can be distributed across work streams:
 
 - **Batch A (5 resources):** accounts, analytics, channels, comments, contact-groups
 - **Batch B (5 resources):** contact-lists, contact-notes, custom-fields, drafts, events
