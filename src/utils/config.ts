@@ -26,7 +26,7 @@ const OAuthConfigSchema = z.object({
   client_id: z.string().default(""),
   client_secret_env: z.string().default("FRONT_MCP_OAUTH_SECRET"),
   redirect_port: z.number().int().default(9876),
-  scopes: z.array(z.string()).default(["shared:*:read", "shared:*:write"]),
+  scopes: z.array(z.string()).default([]),
 });
 
 const AuthConfigSchema = z.object({

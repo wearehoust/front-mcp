@@ -5,7 +5,7 @@
       "client_id": "your-front-app-client-id",
       "client_secret_env": "FRONT_MCP_OAUTH_SECRET",
       "redirect_port": 9876,
-      "scopes": ["shared:*:read", "shared:*:write"]
+      "scopes": []
     },
     "api_token_env": "FRONT_API_TOKEN"
   },

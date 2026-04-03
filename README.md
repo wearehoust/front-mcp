@@ -33,8 +33,26 @@ No official Front MCP server exists. Community alternatives have critical securi
 OAuth provides automatic token refresh and better security than API tokens.
 
 1. Create a Front app at **Settings > Developers > OAuth apps**.
-2. Set the redirect URI to `http://localhost:9876/callback`.
-3. Configure:
+2. Set the redirect URI to `https://localhost:9876/callback`.
+3. Enable the resource permissions your MCP server needs (Read, Write, Delete, Send).
+4. Save the app and copy your **Client ID** and **Client Secret**.
+5. Create `~/.front-mcp/config.json`:
+
+```json
+{
+  "auth": {
+    "method": "oauth",
+    "oauth": {
+      "client_id": "your-client-id",
+      "client_secret_env": "FRONT_MCP_OAUTH_SECRET",
+      "redirect_port": 9876,
+      "scopes": []
+    }
+  }
+}
+```
+
+6. Configure Claude Code:
 
 ```json
 {
