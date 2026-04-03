@@ -68,6 +68,21 @@ describe("PolicyEngine", () => {
       expect(result.decision).toBe("allow");
     });
 
+    it("blocks confirm bypass — confirm=true without prior prompt is rejected", () => {
+      const engine = new PolicyEngine();
+
+      // Skip the first call and go straight to confirm=true
+      const result = engine.evaluate("conversations", "create", {
+        action: "create",
+        subject: "Test",
+        confirm: true,
+      });
+
+      // Must NOT allow — there was no prior confirmation prompt
+      expect(result.decision).toBe("confirm");
+      expect(result.message).toContain("CONFIRMATION REQUIRED");
+    });
+
     it("does not make API call when confirm is missing", () => {
       const engine = new PolicyEngine();
       const result = engine.evaluate("messages", "create", {
