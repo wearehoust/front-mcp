@@ -8,7 +8,7 @@ const mockConfig = {
   clientId: "test_client_id",
   clientSecret: "test_client_secret",
   redirectPort: 19876,
-  scopes: ["shared:*:read"],
+  scopes: [],
 };
 
 describe("OAuthManager", () => {

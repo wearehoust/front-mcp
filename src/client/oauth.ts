@@ -187,6 +187,13 @@ export class OAuthManager implements AuthProvider {
       `${this.config.clientId}:${this.config.clientSecret}`,
     ).toString("base64");
 
+    this.logger.debug("Token exchange request", {
+      url: FRONT_TOKEN_URL,
+      client_id: this.config.clientId,
+      redirect_uri: redirectUri,
+      has_secret: this.config.clientSecret.length > 0,
+    });
+
     const response = await fetch(FRONT_TOKEN_URL, {
       method: "POST",
       headers: {
