@@ -66,33 +66,6 @@ describe("RulesService", () => {
     });
   });
 
-  describe("listForInbox", () => {
-    it("returns rules from GET /inboxes/{id}/rules", async () => {
-      server.use(
-        http.get(`${BASE}/inboxes/inb_123/rules`, () =>
-          HttpResponse.json({ _results: [sampleRule] }),
-        ),
-      );
-
-      const result = await service.listForInbox({ action: "list_for_inbox", inbox_id: "inb_123" });
-      expect(result.results).toHaveLength(1);
-      expect(result.results[0]?.id).toBe("rul_123");
-    });
-
-    it("uses the correct inbox_id in the URL path", async () => {
-      let capturedUrl = "";
-      server.use(
-        http.get(`${BASE}/inboxes/inb_999/rules`, ({ request }) => {
-          capturedUrl = request.url;
-          return HttpResponse.json({ _results: [] });
-        }),
-      );
-
-      await service.listForInbox({ action: "list_for_inbox", inbox_id: "inb_999" });
-      expect(capturedUrl).toContain("/inboxes/inb_999/rules");
-    });
-  });
-
   describe("get", () => {
     it("returns a rule from GET /rules/{id}", async () => {
       server.use(

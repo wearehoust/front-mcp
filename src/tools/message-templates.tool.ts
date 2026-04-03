@@ -15,7 +15,7 @@ import { registerTool } from "./register.js";
 
 const TOOL_NAME = "message_templates";
 const DESCRIPTION =
-  "Manage Front message templates — list, get, create, update, delete templates and manage child templates.";
+  "Manage Front message templates — list, get, create, update, delete templates.";
 
 export function registerMessageTemplatesTool(
   server: unknown,
@@ -28,7 +28,7 @@ export function registerMessageTemplatesTool(
     TOOL_NAME,
     DESCRIPTION,
     {
-      action: z.enum(["list", "get", "create", "update", "delete", "list_children", "create_child"]).describe("The action to perform"),
+      action: z.enum(["list", "get", "create", "update", "delete"]).describe("The action to perform"),
       template_id: z.string().optional(),
       name: z.string().optional(),
       subject: z.string().optional(),
@@ -56,7 +56,7 @@ export function registerMessageTemplatesTool(
         const result = await service.execute(params);
         const sanitized = sanitize(result, sanitizationConfig);
 
-        if (action === "list" || action === "list_children") {
+        if (action === "list") {
           const resultObj = sanitized as { results?: unknown[]; next_page_token?: string };
           const count = Array.isArray(resultObj.results) ? resultObj.results.length : 0;
           return formatSuccess(sanitized, summarizeList("message_templates", count, resultObj.next_page_token));

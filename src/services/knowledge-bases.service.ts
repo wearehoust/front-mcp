@@ -126,7 +126,7 @@ export class KnowledgeBasesService {
   }
 
   async getArticle(input: KnowledgeBasesGetArticleInput): Promise<KnowledgeBaseArticle> {
-    return this.client.get<KnowledgeBaseArticle>(`/knowledge_bases/${input.knowledge_base_id}/articles/${input.article_id}`);
+    return this.client.get<KnowledgeBaseArticle>(`/knowledge_base_articles/${input.article_id}`);
   }
 
   async createArticle(input: KnowledgeBasesCreateArticleInput): Promise<KnowledgeBaseArticle> {
@@ -169,15 +169,15 @@ export class KnowledgeBasesService {
     if (input.locale !== undefined) {
       body["locale"] = input.locale;
     }
-    return this.client.patch<KnowledgeBaseArticle>(`/knowledge_bases/${input.knowledge_base_id}/articles/${input.article_id}`, body);
+    return this.client.patch<KnowledgeBaseArticle>(`/knowledge_base_articles/${input.article_id}/content`, body);
   }
 
   async deleteArticle(input: KnowledgeBasesDeleteArticleInput): Promise<Record<string, never>> {
-    return this.client.delete<Record<string, never>>(`/knowledge_bases/${input.knowledge_base_id}/articles/${input.article_id}`);
+    return this.client.delete<Record<string, never>>(`/knowledge_base_articles/${input.article_id}`);
   }
 
   async getCategory(input: KnowledgeBasesGetCategoryInput): Promise<KnowledgeBaseCategory> {
-    return this.client.get<KnowledgeBaseCategory>(`/knowledge_bases/${input.knowledge_base_id}/categories/${input.category_id}`);
+    return this.client.get<KnowledgeBaseCategory>(`/knowledge_base_categories/${input.category_id}`);
   }
 
   async createCategory(input: KnowledgeBasesCreateCategoryInput): Promise<KnowledgeBaseCategory> {
@@ -205,10 +205,10 @@ export class KnowledgeBasesService {
     if (input.locale !== undefined) {
       body["locale"] = input.locale;
     }
-    return this.client.patch<KnowledgeBaseCategory>(`/knowledge_bases/${input.knowledge_base_id}/categories/${input.category_id}`, body);
+    return this.client.patch<KnowledgeBaseCategory>(`/knowledge_base_categories/${input.category_id}/content`, body);
   }
 
   async deleteCategory(input: KnowledgeBasesDeleteCategoryInput): Promise<Record<string, never>> {
-    return this.client.delete<Record<string, never>>(`/knowledge_bases/${input.knowledge_base_id}/categories/${input.category_id}`);
+    return this.client.delete<Record<string, never>>(`/knowledge_base_categories/${input.category_id}`);
   }
 }

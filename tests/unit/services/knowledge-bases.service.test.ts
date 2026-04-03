@@ -199,14 +199,14 @@ describe("KnowledgeBasesService", () => {
   });
 
   describe("getArticle", () => {
-    it("returns an article from GET /knowledge_bases/{id}/articles/{article_id}", async () => {
+    it("returns an article from GET /knowledge_base_articles/{article_id}", async () => {
       server.use(
-        http.get(`${BASE}/knowledge_bases/knb_123/articles/kba_456`, () =>
+        http.get(`${BASE}/knowledge_base_articles/kba_456`, () =>
           HttpResponse.json(sampleArticle),
         ),
       );
 
-      const result = await service.getArticle({ action: "get_article", knowledge_base_id: "knb_123", article_id: "kba_456" });
+      const result = await service.getArticle({ action: "get_article", article_id: "kba_456" });
       expect(result.id).toBe("kba_456");
       expect(result.subject).toBe("Getting Started");
     });
@@ -254,10 +254,10 @@ describe("KnowledgeBasesService", () => {
   });
 
   describe("updateArticle", () => {
-    it("sends PATCH /knowledge_bases/{id}/articles/{article_id}", async () => {
+    it("sends PATCH /knowledge_base_articles/{article_id}/content", async () => {
       let capturedBody: unknown;
       server.use(
-        http.patch(`${BASE}/knowledge_bases/knb_123/articles/kba_456`, async ({ request }) => {
+        http.patch(`${BASE}/knowledge_base_articles/kba_456/content`, async ({ request }) => {
           capturedBody = await request.json();
           return HttpResponse.json({ ...sampleArticle, subject: "Updated" });
         }),
@@ -265,7 +265,6 @@ describe("KnowledgeBasesService", () => {
 
       const result = await service.updateArticle({
         action: "update_article",
-        knowledge_base_id: "knb_123",
         article_id: "kba_456",
         subject: "Updated",
       });
@@ -275,30 +274,30 @@ describe("KnowledgeBasesService", () => {
   });
 
   describe("deleteArticle", () => {
-    it("sends DELETE /knowledge_bases/{id}/articles/{article_id} and returns empty object", async () => {
+    it("sends DELETE /knowledge_base_articles/{article_id} and returns empty object", async () => {
       let capturedMethod = "";
       server.use(
-        http.delete(`${BASE}/knowledge_bases/knb_123/articles/kba_456`, ({ request }) => {
+        http.delete(`${BASE}/knowledge_base_articles/kba_456`, ({ request }) => {
           capturedMethod = request.method;
           return new HttpResponse(null, { status: 204 });
         }),
       );
 
-      const result = await service.deleteArticle({ action: "delete_article", knowledge_base_id: "knb_123", article_id: "kba_456" });
+      const result = await service.deleteArticle({ action: "delete_article", article_id: "kba_456" });
       expect(capturedMethod).toBe("DELETE");
       expect(result).toEqual({});
     });
   });
 
   describe("getCategory", () => {
-    it("returns a category from GET /knowledge_bases/{id}/categories/{category_id}", async () => {
+    it("returns a category from GET /knowledge_base_categories/{category_id}", async () => {
       server.use(
-        http.get(`${BASE}/knowledge_bases/knb_123/categories/kbc_789`, () =>
+        http.get(`${BASE}/knowledge_base_categories/kbc_789`, () =>
           HttpResponse.json(sampleCategory),
         ),
       );
 
-      const result = await service.getCategory({ action: "get_category", knowledge_base_id: "knb_123", category_id: "kbc_789" });
+      const result = await service.getCategory({ action: "get_category", category_id: "kbc_789" });
       expect(result.id).toBe("kbc_789");
       expect(result.name).toBe("Onboarding");
     });
@@ -343,10 +342,10 @@ describe("KnowledgeBasesService", () => {
   });
 
   describe("updateCategory", () => {
-    it("sends PATCH /knowledge_bases/{id}/categories/{category_id}", async () => {
+    it("sends PATCH /knowledge_base_categories/{category_id}/content", async () => {
       let capturedBody: unknown;
       server.use(
-        http.patch(`${BASE}/knowledge_bases/knb_123/categories/kbc_789`, async ({ request }) => {
+        http.patch(`${BASE}/knowledge_base_categories/kbc_789/content`, async ({ request }) => {
           capturedBody = await request.json();
           return HttpResponse.json({ ...sampleCategory, name: "Updated Category" });
         }),
@@ -354,7 +353,6 @@ describe("KnowledgeBasesService", () => {
 
       const result = await service.updateCategory({
         action: "update_category",
-        knowledge_base_id: "knb_123",
         category_id: "kbc_789",
         name: "Updated Category",
       });
@@ -364,16 +362,16 @@ describe("KnowledgeBasesService", () => {
   });
 
   describe("deleteCategory", () => {
-    it("sends DELETE /knowledge_bases/{id}/categories/{category_id} and returns empty object", async () => {
+    it("sends DELETE /knowledge_base_categories/{category_id} and returns empty object", async () => {
       let capturedMethod = "";
       server.use(
-        http.delete(`${BASE}/knowledge_bases/knb_123/categories/kbc_789`, ({ request }) => {
+        http.delete(`${BASE}/knowledge_base_categories/kbc_789`, ({ request }) => {
           capturedMethod = request.method;
           return new HttpResponse(null, { status: 204 });
         }),
       );
 
-      const result = await service.deleteCategory({ action: "delete_category", knowledge_base_id: "knb_123", category_id: "kbc_789" });
+      const result = await service.deleteCategory({ action: "delete_category", category_id: "kbc_789" });
       expect(capturedMethod).toBe("DELETE");
       expect(result).toEqual({});
     });

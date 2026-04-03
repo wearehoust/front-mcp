@@ -6,8 +6,6 @@ import type {
   MessageTemplatesCreateInput,
   MessageTemplatesUpdateInput,
   MessageTemplatesDeleteInput,
-  MessageTemplatesListChildrenInput,
-  MessageTemplatesCreateChildInput,
 } from "../schemas/message-templates.schema.js";
 
 export interface MessageTemplate {
@@ -35,8 +33,6 @@ export class MessageTemplatesService {
       case "create": return this.create(params as unknown as MessageTemplatesCreateInput);
       case "update": return this.update(params as unknown as MessageTemplatesUpdateInput);
       case "delete": return this.delete(params as unknown as MessageTemplatesDeleteInput);
-      case "list_children": return this.listChildren(params as unknown as MessageTemplatesListChildrenInput);
-      case "create_child": return this.createChild(params as unknown as MessageTemplatesCreateChildInput);
       default: throw new Error(`Unknown action: ${action}`);
     }
   }
@@ -107,34 +103,4 @@ export class MessageTemplatesService {
     return this.client.delete<Record<string, never>>(`/message_templates/${input.template_id}`);
   }
 
-  async listChildren(input: MessageTemplatesListChildrenInput): Promise<PaginatedResponse<MessageTemplate>> {
-    const params: Record<string, string> = {};
-    if (input.page_token !== undefined) {
-      params["page_token"] = input.page_token;
-    }
-    if (input.limit !== undefined) {
-      params["limit"] = String(input.limit);
-    }
-    return fetchPage<MessageTemplate>(this.client, `/message_templates/${input.template_id}/message_templates`, params);
-  }
-
-  async createChild(input: MessageTemplatesCreateChildInput): Promise<MessageTemplate> {
-    const body: Record<string, unknown> = {
-      name: input.name,
-      body: input.body,
-    };
-    if (input.subject !== undefined) {
-      body["subject"] = input.subject;
-    }
-    if (input.folder_id !== undefined) {
-      body["folder_id"] = input.folder_id;
-    }
-    if (input.inbox_ids !== undefined) {
-      body["inbox_ids"] = input.inbox_ids;
-    }
-    if (input.attachments !== undefined) {
-      body["attachments"] = input.attachments;
-    }
-    return this.client.post<MessageTemplate>(`/message_templates/${input.template_id}/message_templates`, body);
-  }
 }
