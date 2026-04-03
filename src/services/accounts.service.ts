@@ -131,7 +131,8 @@ export class AccountsService {
 
   async removeContact(input: AccountsRemoveContactInput): Promise<Record<string, never>> {
     return this.client.delete<Record<string, never>>(
-      `/accounts/${input.account_id}/contacts/${input.contact_id}`,
+      `/accounts/${input.account_id}/contacts`,
+      { contact_ids: [input.contact_id] },
     );
   }
 }

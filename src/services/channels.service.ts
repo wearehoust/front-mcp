@@ -64,6 +64,7 @@ export class ChannelsService {
   }
 
   async create(input: ChannelsCreateInput): Promise<Channel> {
+    const inboxId = input.inbox_id as string;
     const body: Record<string, unknown> = { type: input.type };
     if (input.name !== undefined) {
       body["name"] = input.name;
@@ -71,10 +72,7 @@ export class ChannelsService {
     if (input.settings !== undefined) {
       body["settings"] = input.settings;
     }
-    if (input.inbox_id !== undefined) {
-      body["inbox_id"] = input.inbox_id;
-    }
-    return this.client.post<Channel>("/channels", body);
+    return this.client.post<Channel>(`/inboxes/${inboxId}/channels`, body);
   }
 
   async listForTeammate(input: ChannelsListForTeammateInput): Promise<PaginatedResponse<Channel>> {

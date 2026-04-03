@@ -351,27 +351,27 @@ describe("ContactsService", () => {
   // removeHandle
   // ---------------------------------------------------------------------------
   describe("removeHandle", () => {
-    it("sends DELETE to the handle-specific endpoint", async () => {
-      let capturedMethod = "";
+    it("sends DELETE to /contacts/{id}/handles with handle and source in body", async () => {
+      let capturedBody: unknown;
       server.use(
         http.delete(
-          `${BASE}/contacts/crd_123/handles/h_1`,
-          ({ request }) => {
-            capturedMethod = request.method;
+          `${BASE}/contacts/crd_123/handles`,
+          async ({ request }) => {
+            capturedBody = await request.json();
             return new HttpResponse(null, { status: 204 });
           },
         ),
       );
 
-      const result = await service.removeHandle("crd_123", "h_1");
-      expect(capturedMethod).toBe("DELETE");
+      const result = await service.removeHandle("crd_123", "alice@example.com", "email");
+      expect(capturedBody).toMatchObject({ handle: "alice@example.com", source: "email" });
       expect(result).toEqual({});
     });
 
     it("throws on error response", async () => {
       server.use(
         http.delete(
-          `${BASE}/contacts/crd_123/handles/h_missing`,
+          `${BASE}/contacts/crd_123/handles`,
           () =>
             HttpResponse.json(
               { _error: { message: "Handle not found" } },
@@ -381,7 +381,7 @@ describe("ContactsService", () => {
       );
 
       await expect(
-        service.removeHandle("crd_123", "h_missing"),
+        service.removeHandle("crd_123", "missing@example.com", "email"),
       ).rejects.toThrow("Handle not found");
     });
   });
