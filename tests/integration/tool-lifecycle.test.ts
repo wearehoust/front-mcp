@@ -115,13 +115,20 @@ describe("Integration: Policy Flow", () => {
     expect(text).toContain("CONFIRMATION REQUIRED");
   });
 
-  it("write actions execute with confirm=true", async () => {
+  it("write actions execute after proper two-step confirmation", async () => {
     server.use(
       http.post("https://api2.frontapp.com/tags", () => {
         return HttpResponse.json({ id: "tag_new", name: "Test Tag" });
       }),
     );
 
+    // Step 1: first call without confirm — gets confirmation prompt
+    await callTool("tags", {
+      action: "create",
+      name: "Test Tag",
+    });
+
+    // Step 2: second call with confirm=true — executes
     const result = await callTool("tags", {
       action: "create",
       name: "Test Tag",
@@ -131,6 +138,17 @@ describe("Integration: Policy Flow", () => {
     expect(result.isError).toBeUndefined();
     const text = result.content[0]?.type === "text" ? result.content[0].text : "";
     expect(text).not.toContain("CONFIRMATION");
+  });
+
+  it("confirm=true without prior prompt is blocked (bypass prevention)", async () => {
+    const result = await callTool("tags", {
+      action: "create",
+      name: "Test Tag",
+      confirm: true,
+    });
+
+    const text = result.content[0]?.type === "text" ? result.content[0].text : "";
+    expect(text).toContain("CONFIRMATION REQUIRED");
   });
 
   it("destructive actions are denied by default", async () => {

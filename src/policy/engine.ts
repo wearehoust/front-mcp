@@ -47,18 +47,17 @@ export class PolicyEngine {
     if (decision === "confirm") {
       const confirmParam = params?.["confirm"];
       if (confirmParam === true) {
-        // Check if there's a valid pending confirmation
+        // Only allow if there's a valid pending confirmation from a prior call
         const key = this.confirmationKey(tool, action, params);
         const pending = this.pendingConfirmations.get(key);
         if (pending !== undefined && pending.expiresAt > Date.now()) {
           this.pendingConfirmations.delete(key);
           return { decision: "allow", tier };
         }
-        // Even without pending, confirm=true should allow execution
-        return { decision: "allow", tier };
+        // No valid pending confirmation — reject the bypass attempt
       }
 
-      // Store pending confirmation
+      // Store pending confirmation and require a second call
       const key = this.confirmationKey(tool, action, params);
       this.pendingConfirmations.set(key, {
         expiresAt: Date.now() + CONFIRMATION_TTL_MS,
