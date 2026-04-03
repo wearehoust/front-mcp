@@ -8,7 +8,7 @@ If you discover a security vulnerability in front-mcp-server, please report it r
 
 Instead, please email security concerns to the maintainers directly or use GitHub's private vulnerability reporting feature:
 
-1. Go to the [Security tab](https://github.com/jamesjenkinsyates/front-mcp-server/security/advisories)
+1. Go to the [Security tab](https://github.com/wearehoust/front-mcp-server/security/advisories)
 2. Click "Report a vulnerability"
 3. Provide a description of the vulnerability and steps to reproduce
 

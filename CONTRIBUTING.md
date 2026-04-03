@@ -5,7 +5,7 @@ Thank you for your interest in contributing! This guide will help you get starte
 ## Setup
 
 ```bash
-git clone https://github.com/jamesjenkinsyates/front-mcp-server.git
+git clone https://github.com/wearehoust/front-mcp-server.git
 cd front-mcp-server
 npm install
 npm test  # verify everything works
@@ -67,6 +67,6 @@ If Front adds a new API resource:
 
 ## Reporting Issues
 
-- **Bugs:** Use the [bug report template](https://github.com/jamesjenkinsyates/front-mcp-server/issues/new?template=bug_report.md)
-- **Features:** Use the [feature request template](https://github.com/jamesjenkinsyates/front-mcp-server/issues/new?template=feature_request.md)
+- **Bugs:** Use the [bug report template](https://github.com/wearehoust/front-mcp-server/issues/new?template=bug_report.md)
+- **Features:** Use the [feature request template](https://github.com/wearehoust/front-mcp-server/issues/new?template=feature_request.md)
 - **Security:** See [SECURITY.md](SECURITY.md) (do NOT open a public issue)
