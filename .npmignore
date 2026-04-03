@@ -15,3 +15,4 @@ tsconfig.json
 .env.*
 !.env.example
 MASTER_PROMPT.md
+.mcpregistry_*

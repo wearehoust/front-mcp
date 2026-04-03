@@ -1,6 +1,6 @@
 {
   "name": "@houst-com/front-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Secure, fully-featured MCP server for the Front Platform API — 26 tools, 200+ actions, OAuth support, configurable policy engine",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
