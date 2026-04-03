@@ -1,5 +1,9 @@
 # Front MCP Server
 
+[![CI](https://github.com/jamesjenkinsyates/front-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/jamesjenkinsyates/front-mcp-server/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/front-mcp-server.svg)](https://www.npmjs.com/package/front-mcp-server)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A secure, fully-featured [MCP](https://modelcontextprotocol.io/) server for the [Front](https://front.com) Platform API. Provides 26 tools with 200+ actions for LLM agents to read, search, manage, and act on Front data.
 
 ## Why?
