@@ -15,7 +15,16 @@
       "version": "1.0.1",
       "transport": {
         "type": "stdio"
-      }
+      },
+      "environmentVariables": [
+        {
+          "name": "FRONT_API_TOKEN",
+          "description": "Front API token for authentication",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
     }
   ]
 }
