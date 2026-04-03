@@ -38,12 +38,12 @@ describe("SignaturesService", () => {
   describe("list", () => {
     it("returns paginated signatures from GET /signatures", async () => {
       server.use(
-        http.get(`${BASE}/signatures`, () =>
+        http.get(`${BASE}/teammates/tea_1/signatures`, () =>
           HttpResponse.json({ _results: [sampleSignature], _pagination: {} }),
         ),
       );
 
-      const result = await service.list({ action: "list" });
+      const result = await service.list({ action: "list", teammate_id: "tea_1" });
       expect(result.results).toHaveLength(1);
       expect(result.results[0]?.id).toBe("sig_123");
     });
@@ -51,13 +51,13 @@ describe("SignaturesService", () => {
     it("passes page_token and limit as query params", async () => {
       let capturedUrl = "";
       server.use(
-        http.get(`${BASE}/signatures`, ({ request }) => {
+        http.get(`${BASE}/teammates/tea_1/signatures`, ({ request }) => {
           capturedUrl = request.url;
           return HttpResponse.json({ _results: [], _pagination: {} });
         }),
       );
 
-      await service.list({ action: "list", page_token: "tok_1", limit: 10 });
+      await service.list({ action: "list", teammate_id: "tea_1", page_token: "tok_1", limit: 10 });
       expect(capturedUrl).toContain("page_token=tok_1");
       expect(capturedUrl).toContain("limit=10");
     });
@@ -65,7 +65,7 @@ describe("SignaturesService", () => {
     it("auto-paginates when auto_paginate is true", async () => {
       let callCount = 0;
       server.use(
-        http.get(`${BASE}/signatures`, ({ request }) => {
+        http.get(`${BASE}/teammates/tea_1/signatures`, ({ request }) => {
           callCount++;
           const url = new URL(request.url);
           const pageToken = url.searchParams.get("page_token");
@@ -82,14 +82,14 @@ describe("SignaturesService", () => {
         }),
       );
 
-      const result = await service.list({ action: "list", auto_paginate: true });
+      const result = await service.list({ action: "list", teammate_id: "tea_1", auto_paginate: true });
       expect(callCount).toBe(2);
       expect(result.results).toHaveLength(2);
     });
 
     it("returns next_page_token when more pages exist", async () => {
       server.use(
-        http.get(`${BASE}/signatures`, () =>
+        http.get(`${BASE}/teammates/tea_1/signatures`, () =>
           HttpResponse.json({
             _results: [sampleSignature],
             _pagination: { next: `${BASE}/signatures?page_token=next_tok` },
@@ -97,7 +97,7 @@ describe("SignaturesService", () => {
         ),
       );
 
-      const result = await service.list({ action: "list" });
+      const result = await service.list({ action: "list", teammate_id: "tea_1" });
       expect(result.next_page_token).toBe("next_tok");
     });
   });

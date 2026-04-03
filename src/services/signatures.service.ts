@@ -48,10 +48,23 @@ export class SignaturesService {
       params["limit"] = String(input.limit);
     }
 
-    if (input.auto_paginate === true) {
-      return autoPaginate<Signature>(this.client, "/signatures", params);
+    // Signatures are per-teammate or per-team — no global list endpoint
+    let path: string;
+    if (typeof input.teammate_id === "string" && input.teammate_id.length > 0) {
+      path = `/teammates/${input.teammate_id}/signatures`;
+    } else if (typeof input.team_id === "string" && input.team_id.length > 0) {
+      path = `/teams/${input.team_id}/signatures`;
+    } else {
+      throw new Error(
+        "signatures.list requires either teammate_id or team_id. " +
+        "Front does not have a global signatures endpoint.",
+      );
     }
-    return fetchPage<Signature>(this.client, "/signatures", params);
+
+    if (input.auto_paginate === true) {
+      return autoPaginate<Signature>(this.client, path, params);
+    }
+    return fetchPage<Signature>(this.client, path, params);
   }
 
   async get(input: SignaturesGetInput): Promise<Signature> {

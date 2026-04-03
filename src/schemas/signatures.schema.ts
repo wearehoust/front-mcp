@@ -5,6 +5,8 @@ const SignatureIdSchema = z.object({ signature_id: IdSchema });
 
 export const SignaturesListSchema = PaginationParamsSchema.extend({
   action: z.literal("list"),
+  teammate_id: z.string().optional(),
+  team_id: z.string().optional(),
 });
 
 export const SignaturesGetSchema = SignatureIdSchema.extend({
