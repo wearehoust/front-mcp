@@ -4,28 +4,26 @@
 
 Three-layer modular architecture with strict unidirectional dependencies:
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  MCP Layer                                               │
-│  ┌─────────┐  ┌──────────────┐  ┌────────────────────┐  │
-│  │  Tools   │→ │ Policy Engine │→ │ Schema Validation  │  │
-│  │ (25 files)│  │ (allow/confirm│  │ (Zod per action)   │  │
-│  │          │  │  /deny)       │  │                    │  │
-│  └─────────┘  └──────────────┘  └────────────────────┘  │
-├──────────────────────────────────────────────────────────┤
-│  Service Layer                                           │
-│  ┌────────────────────────┐  ┌────────────────────────┐  │
-│  │  Resource Services     │  │  Shared Utilities      │  │
-│  │  (25 files, one per    │  │  - Pagination helper   │  │
-│  │   Front resource)      │  │  - Response formatter  │  │
-│  └────────────────────────┘  └────────────────────────┘  │
-├──────────────────────────────────────────────────────────┤
-│  Client Layer                                            │
-│  ┌──────────┐ ┌─────────┐ ┌───────────┐ ┌────────────┐  │
-│  │  Front   │ │  OAuth   │ │   Rate    │ │   Retry    │  │
-│  │  Client  │ │  Manager │ │  Limiter  │ │   Engine   │  │
-│  └──────────┘ └─────────┘ └───────────┘ └────────────┘  │
-└──────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph MCP["MCP Layer"]
+        Tools["Tools (26 files)"] --> Policy["Policy Engine<br/>allow / confirm / deny"]
+        Policy --> Schema["Schema Validation<br/>Zod per action"]
+    end
+
+    subgraph Service["Service Layer"]
+        Resources["Resource Services<br/>26 files, one per Front resource"]
+        Utilities["Shared Utilities<br/>Pagination · Response formatter"]
+    end
+
+    subgraph Client["Client Layer"]
+        FC["Front Client"] 
+        OAuth["OAuth Manager"]
+        RL["Rate Limiter"]
+        Retry["Retry Engine"]
+    end
+
+    MCP --> Service --> Client
 ```
 
 **Dependency rule:** Tools -> Services -> Client. No layer may depend on a layer above it.
