@@ -208,8 +208,32 @@ export class OAuthManager implements AuthProvider {
     });
 
     if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`Token exchange failed: ${response.status} ${body}`);
+      const rawBody = await response.text();
+      let detail: string;
+      if (rawBody.trimStart().startsWith("<")) {
+        detail = rawBody.slice(0, 120).replace(/\s+/g, " ").trim() + (rawBody.length > 120 ? "…" : "");
+      } else {
+        try {
+          const parsed = JSON.parse(rawBody) as Record<string, unknown>;
+          const errCode = typeof parsed["error"] === "string" ? parsed["error"] : undefined;
+          const errDesc = typeof parsed["error_description"] === "string" ? parsed["error_description"] : undefined;
+          if (errCode !== undefined && errDesc !== undefined) {
+            detail = `${errCode}: ${errDesc}`;
+          } else if (errDesc !== undefined) {
+            detail = errDesc;
+          } else if (errCode !== undefined) {
+            detail = errCode;
+          } else {
+            detail = rawBody.slice(0, 200);
+          }
+        } catch {
+          detail = rawBody.slice(0, 200);
+        }
+      }
+      throw new Error(
+        `Token exchange failed (HTTP ${response.status}): ${detail}. ` +
+        `Check your client ID and secret.`,
+      );
     }
 
     const data = (await response.json()) as TokenResponse;
@@ -240,7 +264,7 @@ export class OAuthManager implements AuthProvider {
     if (!response.ok) {
       this.tokens = null;
       throw new Error(
-        "Token refresh failed. Please re-authenticate with 'front-mcp auth'.",
+        `Token refresh failed (HTTP ${response.status}). Please re-authenticate with 'front-mcp auth'.`,
       );
     }
 

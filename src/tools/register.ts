@@ -54,8 +54,14 @@ export async function callTool(
 ): Promise<CallToolResult> {
   const reg = registeredTools.get(name);
   if (reg === undefined) {
+    const available = Array.from(registeredTools.keys()).sort().join(", ");
     return {
-      content: [{ type: "text" as const, text: `Unknown tool: ${name}` }],
+      content: [
+        {
+          type: "text" as const,
+          text: `Unknown tool: "${name}". Available tools: ${available}`,
+        },
+      ],
       isError: true,
     };
   }

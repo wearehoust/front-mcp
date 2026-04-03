@@ -109,14 +109,18 @@ export async function loadTokens(passphrase?: string): Promise<StoredTokens | nu
   const data = Buffer.from(file.data, "base64");
   const key = deriveKey(salt, passphrase);
 
-  const decipher = createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(tag);
-  const decrypted = Buffer.concat([
-    decipher.update(data),
-    decipher.final(),
-  ]);
+  try {
+    const decipher = createDecipheriv(ALGORITHM, key, iv);
+    decipher.setAuthTag(tag);
+    const decrypted = Buffer.concat([
+      decipher.update(data),
+      decipher.final(),
+    ]);
 
-  return JSON.parse(decrypted.toString("utf-8")) as StoredTokens;
+    return JSON.parse(decrypted.toString("utf-8")) as StoredTokens;
+  } catch {
+    return null;
+  }
 }
 
 export function clearTokens(): void {

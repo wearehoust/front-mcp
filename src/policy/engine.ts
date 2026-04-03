@@ -112,7 +112,10 @@ export class PolicyEngine {
           const parsed: unknown = JSON.parse(raw);
           return PolicyConfigSchema.parse(parsed);
         } catch {
-          // Fall back to defaults on parse error
+          process.stderr.write(
+            `[front-mcp] WARNING: Policy file at "${policyFilePath}" is invalid (JSON parse or schema error). ` +
+            `Falling back to default policy. Fix the file and restart the server.\n`,
+          );
         }
       }
     }
