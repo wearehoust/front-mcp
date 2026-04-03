@@ -1,7 +1,7 @@
 # Front MCP Server
 
-[![CI](https://github.com/jamesjenkinsyates/front-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/jamesjenkinsyates/front-mcp-server/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/front-mcp-server.svg)](https://www.npmjs.com/package/front-mcp-server)
+[![CI](https://github.com/jamesjenkinsyates/@houst-com/front-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jamesjenkinsyates/@houst-com/front-mcp/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/@houst-com/front-mcp.svg)](https://www.npmjs.com/package/@houst-com/front-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A secure, fully-featured [MCP](https://modelcontextprotocol.io/) server for the [Front](https://front.com) Platform API. Provides 26 tools with 200+ actions for LLM agents to read, search, manage, and act on Front data.
@@ -21,7 +21,7 @@ No official Front MCP server exists. Community alternatives have critical securi
   "mcpServers": {
     "front": {
       "command": "npx",
-      "args": ["-y", "front-mcp-server"],
+      "args": ["-y", "@houst-com/front-mcp"],
       "env": {
         "FRONT_API_TOKEN": "your-front-api-token"
       }
@@ -63,7 +63,7 @@ OAuth provides automatic token refresh and better security than API tokens.
   "mcpServers": {
     "front": {
       "command": "npx",
-      "args": ["-y", "front-mcp-server"],
+      "args": ["-y", "@houst-com/front-mcp"],
       "env": {
         "FRONT_MCP_AUTH_METHOD": "oauth",
         "FRONT_MCP_OAUTH_SECRET": "your-client-secret"
