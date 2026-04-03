@@ -8,7 +8,8 @@
     "front-mcp": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/postbuild.js",
+    "smoke": "node scripts/smoke.js",
     "lint": "eslint 'src/**/*.ts'",
     "type-check": "node --max-old-space-size=8192 ./node_modules/.bin/tsc --noEmit",
     "test": "vitest run",

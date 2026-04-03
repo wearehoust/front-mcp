@@ -36,14 +36,59 @@ async function handleAuth(config: ReturnType<typeof loadConfig>, logger: Logger)
   process.stderr.write("Authentication successful!\n");
 }
 
+const VERSION = "1.0.0";
+
+const HELP_TEXT = `front-mcp — Secure MCP server for the Front Platform API
+
+Usage:
+  front-mcp              Start the MCP server (stdio transport)
+  front-mcp auth         Authenticate via OAuth
+  front-mcp auth --status  Check authentication status
+  front-mcp auth --clear   Remove stored OAuth tokens
+
+Options:
+  --version, -v   Show version number
+  --help, -h      Show this help message
+
+Environment variables:
+  FRONT_API_TOKEN           API token for authentication (fallback)
+  FRONT_MCP_AUTH_METHOD     "oauth" or "api_token" (default: api_token)
+  FRONT_MCP_OAUTH_SECRET    OAuth client secret
+  FRONT_MCP_LOG_LEVEL       "error", "warn", "info", "debug" (default: info)
+  FRONT_MCP_POLICY_FILE     Path to custom policy JSON file
+
+Documentation: https://github.com/jamesjenkinsyates/front-mcp-server
+`;
+
 async function main(): Promise<void> {
+  const args = process.argv.slice(2);
+
+  // Handle --version / -v
+  if (args.includes("--version") || args.includes("-v")) {
+    process.stderr.write(`front-mcp ${VERSION}\n`);
+    return;
+  }
+
+  // Handle --help / -h
+  if (args.includes("--help") || args.includes("-h")) {
+    process.stderr.write(HELP_TEXT);
+    return;
+  }
+
   const config = loadConfig();
   const logger = new Logger(config.logging.level, config.logging.redact_fields);
 
   // Handle auth subcommand
-  if (process.argv[2] === "auth") {
+  if (args[0] === "auth") {
     await handleAuth(config, logger);
     return;
+  }
+
+  // Handle unknown subcommands
+  if (args.length > 0 && args[0] !== undefined && !args[0].startsWith("-")) {
+    process.stderr.write(`Unknown command: "${args[0]}"\n\n`);
+    process.stderr.write(HELP_TEXT);
+    process.exit(1);
   }
 
   // Resolve auth provider

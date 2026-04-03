@@ -129,12 +129,31 @@ export class OAuthManager implements AuthProvider {
             );
             httpsServer.close();
 
+            clearTimeout(timeout);
             this.exchangeCode(code, redirectUri)
               .then(() => { resolve(); })
               .catch(reject);
           }
         },
       );
+
+      // Timeout after 5 minutes
+      const AUTH_TIMEOUT_MS = 5 * 60 * 1000;
+      const timeout = setTimeout(() => {
+        httpsServer.close();
+        reject(new Error(
+          "OAuth callback timed out after 5 minutes. " +
+          "Run 'front-mcp auth' again to retry.",
+        ));
+      }, AUTH_TIMEOUT_MS);
+
+      // Graceful shutdown
+      const shutdown = (): void => {
+        clearTimeout(timeout);
+        httpsServer.close();
+      };
+      process.on("SIGINT", shutdown);
+      process.on("SIGTERM", shutdown);
 
       httpsServer.listen(this.config.redirectPort, () => {
         const authUrl = new URL(FRONT_AUTH_URL);

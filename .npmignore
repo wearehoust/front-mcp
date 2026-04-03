@@ -1,8 +1,9 @@
+src/
 tests/
 specs/
 docs/
-config/
 coverage/
+scripts/
 .github/
 *.test.ts
 *.spec.ts
@@ -12,4 +13,5 @@ tsconfig.json
 .gitignore
 .env
 .env.*
+!.env.example
 MASTER_PROMPT.md

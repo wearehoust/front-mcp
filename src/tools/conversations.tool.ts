@@ -13,6 +13,7 @@ import {
 } from "./format.js";
 import { mapError } from "./error-mapper.js";
 import { registerTool } from "./register.js";
+import { validateRequiredFields } from "./validate.js";
 
 const TOOL_NAME = "conversations";
 const DESCRIPTION =
@@ -56,6 +57,16 @@ export function registerConversationsTool(
     async (params) => {
       try {
         const action = params["action"] as string;
+
+        // Validate required fields before hitting the API
+        const validationError = validateRequiredFields(params, [
+          { field: "conversation_id", type: "string", requiredFor: ["get", "update", "delete", "assign", "list_events", "list_followers", "add_followers", "remove_followers", "list_inboxes", "add_link", "remove_links", "list_messages", "update_reminders", "add_tag", "remove_tag"] },
+          { field: "assignee_id", type: "string", requiredFor: ["assign"] },
+          { field: "tag_id", type: "string", requiredFor: ["add_tag"] },
+          { field: "link_id", type: "string", requiredFor: ["add_link"] },
+          { field: "query", type: "string", requiredFor: ["search"] },
+        ]);
+        if (validationError !== null) return validationError;
 
         const evaluation = policy.evaluate(TOOL_NAME, action, params);
         if (evaluation.decision === "deny") {
