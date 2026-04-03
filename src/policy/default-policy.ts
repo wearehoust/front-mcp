@@ -154,8 +154,6 @@ const ACTION_TIERS: Record<string, Record<string, ActionTier>> = {
     create: "write",
     update: "write",
     delete: "destructive",
-    list_children: "read",
-    create_child: "write",
   },
   messages: {
     get: "read",
@@ -168,7 +166,6 @@ const ACTION_TIERS: Record<string, Record<string, ActionTier>> = {
   },
   rules: {
     list: "read",
-    list_for_inbox: "read",
     get: "read",
     list_for_teammate: "read",
     list_for_team: "read",

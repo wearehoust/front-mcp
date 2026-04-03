@@ -1,7 +1,6 @@
 import type { FrontClient } from "../client/front-client.js";
 import type {
   RulesListInput,
-  RulesListForInboxInput,
   RulesGetInput,
   RulesListForTeammateInput,
   RulesListForTeamInput,
@@ -30,7 +29,6 @@ export class RulesService {
     const action = params["action"] as string;
     switch (action) {
       case "list": return this.list(params as unknown as RulesListInput);
-      case "list_for_inbox": return this.listForInbox(params as unknown as RulesListForInboxInput);
       case "get": return this.get(params as unknown as RulesGetInput);
       case "list_for_teammate": return this.listForTeammate(params as unknown as RulesListForTeammateInput);
       case "list_for_team": return this.listForTeam(params as unknown as RulesListForTeamInput);
@@ -40,11 +38,6 @@ export class RulesService {
 
   async list(_input: RulesListInput): Promise<RulesListResponse> {
     const response = await this.client.get<{ _results?: Rule[] }>("/rules");
-    return { results: response._results ?? [] };
-  }
-
-  async listForInbox(input: RulesListForInboxInput): Promise<RulesListResponse> {
-    const response = await this.client.get<{ _results?: Rule[] }>(`/inboxes/${input.inbox_id}/rules`);
     return { results: response._results ?? [] };
   }
 

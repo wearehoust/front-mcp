@@ -39,7 +39,7 @@ export const KnowledgeBasesListArticlesSchema = z.object({
 
 export const KnowledgeBasesGetArticleSchema = z.object({
   action: z.literal("get_article"),
-  knowledge_base_id: IdSchema,
+  knowledge_base_id: IdSchema.optional(),
   article_id: IdSchema,
 });
 
@@ -56,7 +56,7 @@ export const KnowledgeBasesCreateArticleSchema = ConfirmParamSchema.extend({
 
 export const KnowledgeBasesUpdateArticleSchema = ConfirmParamSchema.extend({
   action: z.literal("update_article"),
-  knowledge_base_id: IdSchema,
+  knowledge_base_id: IdSchema.optional(),
   article_id: IdSchema,
   subject: z.string().optional(),
   content: z.string().optional(),
@@ -68,13 +68,13 @@ export const KnowledgeBasesUpdateArticleSchema = ConfirmParamSchema.extend({
 
 export const KnowledgeBasesDeleteArticleSchema = ConfirmParamSchema.extend({
   action: z.literal("delete_article"),
-  knowledge_base_id: IdSchema,
+  knowledge_base_id: IdSchema.optional(),
   article_id: IdSchema,
 });
 
 export const KnowledgeBasesGetCategorySchema = z.object({
   action: z.literal("get_category"),
-  knowledge_base_id: IdSchema,
+  knowledge_base_id: IdSchema.optional(),
   category_id: IdSchema,
 });
 
@@ -89,7 +89,7 @@ export const KnowledgeBasesCreateCategorySchema = ConfirmParamSchema.extend({
 
 export const KnowledgeBasesUpdateCategorySchema = ConfirmParamSchema.extend({
   action: z.literal("update_category"),
-  knowledge_base_id: IdSchema,
+  knowledge_base_id: IdSchema.optional(),
   category_id: IdSchema,
   name: z.string().optional(),
   description: z.string().optional(),
@@ -98,7 +98,7 @@ export const KnowledgeBasesUpdateCategorySchema = ConfirmParamSchema.extend({
 
 export const KnowledgeBasesDeleteCategorySchema = ConfirmParamSchema.extend({
   action: z.literal("delete_category"),
-  knowledge_base_id: IdSchema,
+  knowledge_base_id: IdSchema.optional(),
   category_id: IdSchema,
 });
 

@@ -26,9 +26,8 @@ export function registerRulesTool(
     TOOL_NAME,
     DESCRIPTION,
     {
-      action: z.enum(["list", "list_for_inbox", "get", "list_for_teammate", "list_for_team"]).describe("The action to perform"),
+      action: z.enum(["list", "get", "list_for_teammate", "list_for_team"]).describe("The action to perform"),
       rule_id: z.string().optional(),
-      inbox_id: z.string().optional(),
       teammate_id: z.string().optional(),
       team_id: z.string().optional(),
     },
@@ -44,7 +43,7 @@ export function registerRulesTool(
         const result = await service.execute(params);
         const sanitized = sanitize(result, sanitizationConfig);
 
-        const listActions = ["list", "list_for_inbox", "list_for_teammate", "list_for_team"];
+        const listActions = ["list", "list_for_teammate", "list_for_team"];
         if (listActions.includes(action)) {
           const resultObj = sanitized as { results?: unknown[] };
           const count = Array.isArray(resultObj.results) ? resultObj.results.length : 0;
