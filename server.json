@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.wearehoust/front-mcp",
+  "title": "Front MCP",
+  "description": "Secure MCP server for Front: search conversations, manage contacts, send messages, automate inbox workflows — 26 tools, 172 actions.",
+  "repository": {
+    "url": "https://github.com/wearehoust/front-mcp",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@houst-com/front-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

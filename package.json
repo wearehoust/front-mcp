@@ -19,15 +19,29 @@
   },
   "keywords": [
     "mcp",
-    "front",
-    "frontapp",
     "model-context-protocol",
+    "front",
+    "front-api",
+    "frontapp",
+    "ai-agents",
+    "automation",
+    "customer-support",
+    "inbox-automation",
     "llm",
     "claude",
-    "customer-communication"
+    "typescript"
   ],
-  "author": "",
+  "homepage": "https://github.com/wearehoust/front-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/wearehoust/front-mcp/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wearehoust/front-mcp.git"
+  },
+  "author": "Houst (https://houst.com)",
   "license": "MIT",
+  "mcpName": "io.github.wearehoust/front-mcp",
   "engines": {
     "node": ">=20.0.0"
   },
