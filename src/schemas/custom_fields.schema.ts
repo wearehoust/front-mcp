@@ -1,9 +1,8 @@
 import { z } from "zod";
-import { PaginationParamsSchema, IdSchema } from "./common.schema.js";
+import { PaginationParamsSchema } from "./common.schema.js";
 
 export const CustomFieldsListForAccountsSchema = PaginationParamsSchema.extend({
   action: z.literal("list_for_accounts"),
-  account_id: IdSchema,
 });
 
 export const CustomFieldsListForContactsSchema = PaginationParamsSchema.extend({
@@ -16,7 +15,6 @@ export const CustomFieldsListForConversationsSchema = PaginationParamsSchema.ext
 
 export const CustomFieldsListForInboxesSchema = PaginationParamsSchema.extend({
   action: z.literal("list_for_inboxes"),
-  inbox_id: IdSchema,
 });
 
 export const CustomFieldsListForLinksSchema = PaginationParamsSchema.extend({
@@ -25,7 +23,6 @@ export const CustomFieldsListForLinksSchema = PaginationParamsSchema.extend({
 
 export const CustomFieldsListForTeammatesSchema = PaginationParamsSchema.extend({
   action: z.literal("list_for_teammates"),
-  teammate_id: IdSchema,
 });
 
 export const CustomFieldsSchema = z.discriminatedUnion("action", [

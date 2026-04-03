@@ -54,9 +54,9 @@ export class CustomFieldsService {
   async listForAccounts(input: CustomFieldsListForAccountsInput): Promise<PaginatedResponse<CustomField>> {
     const params = this.buildPageParams(input);
     if (input.auto_paginate === true) {
-      return autoPaginate<CustomField>(this.client, `/accounts/${input.account_id}/custom_fields`, params);
+      return autoPaginate<CustomField>(this.client, "/accounts/custom_fields", params);
     }
-    return fetchPage<CustomField>(this.client, `/accounts/${input.account_id}/custom_fields`, params);
+    return fetchPage<CustomField>(this.client, "/accounts/custom_fields", params);
   }
 
   async listForContacts(input: CustomFieldsListForContactsInput): Promise<PaginatedResponse<CustomField>> {
@@ -78,9 +78,9 @@ export class CustomFieldsService {
   async listForInboxes(input: CustomFieldsListForInboxesInput): Promise<PaginatedResponse<CustomField>> {
     const params = this.buildPageParams(input);
     if (input.auto_paginate === true) {
-      return autoPaginate<CustomField>(this.client, `/inboxes/${input.inbox_id}/custom_fields`, params);
+      return autoPaginate<CustomField>(this.client, "/inboxes/custom_fields", params);
     }
-    return fetchPage<CustomField>(this.client, `/inboxes/${input.inbox_id}/custom_fields`, params);
+    return fetchPage<CustomField>(this.client, "/inboxes/custom_fields", params);
   }
 
   async listForLinks(input: CustomFieldsListForLinksInput): Promise<PaginatedResponse<CustomField>> {
@@ -94,8 +94,8 @@ export class CustomFieldsService {
   async listForTeammates(input: CustomFieldsListForTeammatesInput): Promise<PaginatedResponse<CustomField>> {
     const params = this.buildPageParams(input);
     if (input.auto_paginate === true) {
-      return autoPaginate<CustomField>(this.client, `/teammates/${input.teammate_id}/custom_fields`, params);
+      return autoPaginate<CustomField>(this.client, "/teammates/custom_fields", params);
     }
-    return fetchPage<CustomField>(this.client, `/teammates/${input.teammate_id}/custom_fields`, params);
+    return fetchPage<CustomField>(this.client, "/teammates/custom_fields", params);
   }
 }

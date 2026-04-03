@@ -226,17 +226,15 @@ describe("ConversationsService", () => {
   });
 
   // ---------------------------------------------------------------------------
-  // delete (soft-delete via PATCH status=deleted)
+  // delete (DELETE /conversations/{id})
   // ---------------------------------------------------------------------------
 
   describe("delete", () => {
-    it("patches conversation status to deleted", async () => {
-      let capturedBody: unknown;
+    it("sends DELETE to /conversations/{id}", async () => {
       server.use(
-        http.patch(`${BASE}/conversations/cnv_1`, async ({ request }) => {
-          capturedBody = await request.json();
-          return HttpResponse.json({});
-        }),
+        http.delete(`${BASE}/conversations/cnv_1`, () =>
+          HttpResponse.json({}),
+        ),
       );
 
       await service.execute({
@@ -244,8 +242,6 @@ describe("ConversationsService", () => {
         conversation_id: "cnv_1",
         confirm: true,
       });
-
-      expect(capturedBody).toEqual({ status: "deleted" });
     });
   });
 
