@@ -81,5 +81,63 @@ describe("OAuthManager", () => {
         "Token refresh failed",
       );
     });
+
+    it("deduplicates concurrent refresh calls into a single token request", async () => {
+      let refreshCallCount = 0;
+      server.use(
+        http.post("https://app.frontapp.com/oauth/token", async () => {
+          refreshCallCount += 1;
+          // Slight delay so the parallel callers all observe an in-flight refresh
+          await new Promise((r) => setTimeout(r, 20));
+          return HttpResponse.json({
+            access_token: "new_access",
+            refresh_token: "new_refresh",
+            token_type: "Bearer",
+            expires_in: 3600,
+          });
+        }),
+      );
+
+      const logger = new Logger("error");
+      const oauth = new OAuthManager(mockConfig, logger);
+
+      (oauth as Record<string, unknown>)["tokens"] = {
+        access_token: "expired",
+        refresh_token: "old_refresh",
+        expires_at: Date.now() - 1000,
+        refresh_expires_at: Date.now() + 3600 * 1000,
+      };
+
+      const tokens = await Promise.all([
+        oauth.getToken(),
+        oauth.getToken(),
+        oauth.getToken(),
+      ]);
+
+      expect(tokens).toEqual(["new_access", "new_access", "new_access"]);
+      expect(refreshCallCount).toBe(1);
+    });
+
+    it("rejects token endpoint responses missing required fields", async () => {
+      server.use(
+        http.post("https://app.frontapp.com/oauth/token", () => {
+          return HttpResponse.json({ token_type: "Bearer" });
+        }),
+      );
+
+      const logger = new Logger("error");
+      const oauth = new OAuthManager(mockConfig, logger);
+
+      (oauth as Record<string, unknown>)["tokens"] = {
+        access_token: "expired",
+        refresh_token: "old_refresh",
+        expires_at: Date.now() - 1000,
+        refresh_expires_at: Date.now() + 3600 * 1000,
+      };
+
+      await expect(oauth.getToken()).rejects.toThrow(
+        /unexpected payload/i,
+      );
+    });
   });
 });

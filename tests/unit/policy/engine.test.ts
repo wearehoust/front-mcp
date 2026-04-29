@@ -194,4 +194,71 @@ describe("PolicyEngine", () => {
       expect(engine.evaluate("conversations", "delete").decision).toBe("deny");
     });
   });
+
+  describe("confirmation key canonicalization", () => {
+    it("matches confirmations regardless of object key ordering", () => {
+      const engine = new PolicyEngine();
+
+      // First call with one ordering
+      engine.evaluate("conversations", "create", {
+        action: "create",
+        recipient: { name: "Alice", email: "a@example.com" },
+      });
+
+      // Second call with reversed object key ordering must hit the same pending key
+      const result = engine.evaluate("conversations", "create", {
+        action: "create",
+        recipient: { email: "a@example.com", name: "Alice" },
+        confirm: true,
+      });
+
+      expect(result.decision).toBe("allow");
+    });
+
+    it("treats different object args as distinct confirmations", () => {
+      const engine = new PolicyEngine();
+
+      engine.evaluate("conversations", "create", {
+        action: "create",
+        recipient: { email: "alice@example.com" },
+      });
+
+      // Different recipient — must NOT match
+      const result = engine.evaluate("conversations", "create", {
+        action: "create",
+        recipient: { email: "mallory@example.com" },
+        confirm: true,
+      });
+
+      expect(result.decision).toBe("confirm");
+    });
+  });
+
+  describe("pending confirmation cleanup", () => {
+    it("prunes expired confirmations on subsequent evaluate calls", () => {
+      vi.useFakeTimers();
+      try {
+        const engine = new PolicyEngine();
+
+        // Add one pending confirmation
+        engine.evaluate("conversations", "create", { action: "create", subject: "A" });
+
+        // Walk past the 5-minute TTL
+        vi.advanceTimersByTime(6 * 60 * 1000);
+
+        // Trigger a new evaluate that should prune the expired entry
+        engine.evaluate("conversations", "create", { action: "create", subject: "B" });
+
+        // The confirm bypass for the original entry must no longer succeed
+        const result = engine.evaluate("conversations", "create", {
+          action: "create",
+          subject: "A",
+          confirm: true,
+        });
+        expect(result.decision).toBe("confirm");
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
 });

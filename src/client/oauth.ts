@@ -1,8 +1,11 @@
 import { createServer as createHttpsServer } from "node:https";
-import { generateKeyPairSync } from "node:crypto";
+import { generateKeyPairSync, randomBytes, timingSafeEqual } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { writeFileSync, readFileSync, unlinkSync } from "node:fs";
+import { writeFileSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { URL } from "node:url";
+import { z } from "zod";
 import { saveTokens, loadTokens, clearTokens, isTokenExpiringSoon, type StoredTokens } from "./token-store.js";
 import type { AuthProvider } from "./front-client.js";
 import { Logger } from "../utils/logger.js";
@@ -20,24 +23,35 @@ interface OAuthConfig {
   scopes: string[];
 }
 
-interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: string;
-  expires_in: number;
+const TokenResponseSchema = z.object({
+  access_token: z.string().min(1),
+  refresh_token: z.string().min(1),
+  token_type: z.string().optional(),
+  expires_in: z.number().optional(),
+});
+
+type TokenResponse = z.infer<typeof TokenResponseSchema>;
+
+interface CertMaterial {
+  key: string;
+  cert: string;
 }
 
-function generateSelfSignedCert(): { key: string; cert: string } {
+function generateSelfSignedCert(): CertMaterial {
   const { privateKey } = generateKeyPairSync("rsa", {
     modulusLength: 2048,
     publicKeyEncoding: { type: "spki", format: "pem" },
     privateKeyEncoding: { type: "pkcs8", format: "pem" },
   });
 
-  const keyFile = `/tmp/front-mcp-oauth-key-${String(process.pid)}.pem`;
-  const certFile = `/tmp/front-mcp-oauth-cert-${String(process.pid)}.pem`;
+  // Use a private 0700 temp dir with a random name so the key/cert are not
+  // readable by other local users (the previous PID-based filename was
+  // predictable, and /tmp is typically world-readable).
+  const dir = mkdtempSync(join(tmpdir(), "front-mcp-oauth-"));
+  const keyFile = join(dir, "key.pem");
+  const certFile = join(dir, "cert.pem");
 
-  writeFileSync(keyFile, privateKey);
+  writeFileSync(keyFile, privateKey, { mode: 0o600 });
 
   try {
     execFileSync("openssl", [
@@ -51,9 +65,14 @@ function generateSelfSignedCert(): { key: string; cert: string } {
 
     const cert = readFileSync(certFile, "utf-8");
     return { key: privateKey, cert };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "openssl invocation failed";
+    throw new Error(
+      `Failed to generate self-signed certificate for OAuth callback. ` +
+      `Ensure 'openssl' is installed and on PATH. Underlying error: ${message}`,
+    );
   } finally {
-    try { unlinkSync(keyFile); } catch { /* cleanup */ }
-    try { unlinkSync(certFile); } catch { /* cleanup */ }
+    try { rmSync(dir, { recursive: true, force: true }); } catch { /* cleanup */ }
   }
 }
 
@@ -61,6 +80,11 @@ export class OAuthManager implements AuthProvider {
   private config: OAuthConfig;
   private tokens: StoredTokens | null = null;
   private logger: Logger;
+  // Single in-flight refresh promise so concurrent getToken() callers share
+  // one refresh request. Without this, parallel API calls on an expired token
+  // each trigger a refresh, racing on the refresh_token (which Front rotates)
+  // and likely invalidating each other.
+  private refreshInFlight: Promise<void> | null = null;
 
   constructor(config: OAuthConfig, logger: Logger) {
     this.config = config;
@@ -79,8 +103,20 @@ export class OAuthManager implements AuthProvider {
     }
 
     if (Date.now() >= this.tokens.expires_at) {
-      this.logger.info("Access token expired, refreshing...");
-      await this.refreshAccessToken();
+      if (this.refreshInFlight === null) {
+        this.logger.info("Access token expired, refreshing...");
+        this.refreshInFlight = this.refreshAccessToken().finally(() => {
+          this.refreshInFlight = null;
+        });
+      }
+      await this.refreshInFlight;
+    }
+
+    if (this.tokens === null) {
+      // Refresh failed and cleared tokens.
+      throw new Error(
+        "OAuth token refresh failed. Run 'front-mcp auth' to re-authenticate.",
+      );
     }
 
     if (isTokenExpiringSoon(this.tokens)) {
@@ -97,69 +133,108 @@ export class OAuthManager implements AuthProvider {
       const redirectUri = `https://localhost:${String(this.config.redirectPort)}/callback`;
 
       const tlsOptions = generateSelfSignedCert();
+      // OAuth 2.0 RFC 6749 §10.12: the `state` parameter binds the
+      // authorization request to the callback, preventing CSRF attacks.
+      const expectedState = randomBytes(32).toString("base64url");
+      const expectedStateBuf = Buffer.from(expectedState, "utf-8");
+
+      let settled = false;
+      const finish = (fn: () => void): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        process.off("SIGINT", shutdown);
+        process.off("SIGTERM", shutdown);
+        try { httpsServer.close(); } catch { /* already closed */ }
+        fn();
+      };
 
       const httpsServer = createHttpsServer(
         tlsOptions,
         (req: IncomingMessage, res: ServerResponse) => {
           const url = new URL(req.url ?? "/", `https://localhost:${String(this.config.redirectPort)}`);
 
-          if (url.pathname === "/callback") {
-            const code = url.searchParams.get("code");
-            const error = url.searchParams.get("error");
-
-            if (typeof error === "string") {
-              res.writeHead(400, { "Content-Type": "text/html" });
-              res.end("<h1>Authentication Failed</h1>");
-              httpsServer.close();
-              reject(new Error(`OAuth error: ${error}`));
-              return;
-            }
-
-            if (typeof code !== "string" || code.length === 0) {
-              res.writeHead(400, { "Content-Type": "text/html" });
-              res.end("<h1>Missing authorization code</h1>");
-              httpsServer.close();
-              reject(new Error("No authorization code received"));
-              return;
-            }
-
-            res.writeHead(200, { "Content-Type": "text/html" });
-            res.end(
-              "<h1>Authentication Successful!</h1><p>You can close this window and return to the terminal.</p>",
-            );
-            httpsServer.close();
-
-            clearTimeout(timeout);
-            this.exchangeCode(code, redirectUri)
-              .then(() => { resolve(); })
-              .catch(reject);
+          if (url.pathname !== "/callback") {
+            res.writeHead(404, { "Content-Type": "text/plain" });
+            res.end("Not found");
+            return;
           }
+
+          const code = url.searchParams.get("code");
+          const error = url.searchParams.get("error");
+          const state = url.searchParams.get("state");
+
+          if (typeof error === "string") {
+            res.writeHead(400, { "Content-Type": "text/html" });
+            res.end("<h1>Authentication Failed</h1>");
+            finish(() => { reject(new Error(`OAuth error: ${error}`)); });
+            return;
+          }
+
+          // Validate state. Use timingSafeEqual to avoid micro-leaks even
+          // though state is short-lived; consistent length required.
+          const stateBuf = typeof state === "string" ? Buffer.from(state, "utf-8") : null;
+          const stateValid =
+            stateBuf !== null &&
+            stateBuf.length === expectedStateBuf.length &&
+            timingSafeEqual(stateBuf, expectedStateBuf);
+
+          if (!stateValid) {
+            res.writeHead(400, { "Content-Type": "text/html" });
+            res.end("<h1>Authentication Failed</h1><p>Invalid state parameter.</p>");
+            finish(() => {
+              reject(new Error(
+                "OAuth callback rejected: state parameter missing or did not match. " +
+                "This may indicate a CSRF attempt or that you completed the flow in a different browser session.",
+              ));
+            });
+            return;
+          }
+
+          if (typeof code !== "string" || code.length === 0) {
+            res.writeHead(400, { "Content-Type": "text/html" });
+            res.end("<h1>Missing authorization code</h1>");
+            finish(() => { reject(new Error("No authorization code received")); });
+            return;
+          }
+
+          res.writeHead(200, { "Content-Type": "text/html" });
+          res.end(
+            "<h1>Authentication Successful!</h1><p>You can close this window and return to the terminal.</p>",
+          );
+
+          this.exchangeCode(code, redirectUri)
+            .then(() => { finish(() => { resolve(); }); })
+            .catch((err: unknown) => { finish(() => { reject(err instanceof Error ? err : new Error(String(err))); }); });
         },
       );
 
       // Timeout after 5 minutes
       const AUTH_TIMEOUT_MS = 5 * 60 * 1000;
       const timeout = setTimeout(() => {
-        httpsServer.close();
-        reject(new Error(
-          "OAuth callback timed out after 5 minutes. " +
-          "Run 'front-mcp auth' again to retry.",
-        ));
+        finish(() => {
+          reject(new Error(
+            "OAuth callback timed out after 5 minutes. " +
+            "Run 'front-mcp auth' again to retry.",
+          ));
+        });
       }, AUTH_TIMEOUT_MS);
 
-      // Graceful shutdown
       const shutdown = (): void => {
-        clearTimeout(timeout);
-        httpsServer.close();
+        finish(() => { reject(new Error("OAuth flow aborted by signal")); });
       };
       process.on("SIGINT", shutdown);
       process.on("SIGTERM", shutdown);
 
-      httpsServer.listen(this.config.redirectPort, () => {
+      // Bind to loopback only. The previous code passed only the port, which
+      // node interprets as listening on 0.0.0.0 — that exposed the OAuth
+      // callback (and any associated state/code window) to the local network.
+      httpsServer.listen(this.config.redirectPort, "127.0.0.1", () => {
         const authUrl = new URL(FRONT_AUTH_URL);
         authUrl.searchParams.set("response_type", "code");
         authUrl.searchParams.set("client_id", this.config.clientId);
         authUrl.searchParams.set("redirect_uri", redirectUri);
+        authUrl.searchParams.set("state", expectedState);
         if (this.config.scopes.length > 0) {
           authUrl.searchParams.set("scope", this.config.scopes.join(" "));
         }
@@ -172,7 +247,9 @@ export class OAuthManager implements AuthProvider {
         );
       });
 
-      httpsServer.on("error", reject);
+      httpsServer.on("error", (err) => {
+        finish(() => { reject(err); });
+      });
     });
   }
 
@@ -255,7 +332,7 @@ export class OAuthManager implements AuthProvider {
       );
     }
 
-    const data = (await response.json()) as TokenResponse;
+    const data = await this.parseTokenResponse(response);
     await this.storeTokens(data);
   }
 
@@ -283,20 +360,42 @@ export class OAuthManager implements AuthProvider {
     if (!response.ok) {
       this.tokens = null;
       throw new Error(
-        `Token refresh failed (HTTP ${response.status}). Please re-authenticate with 'front-mcp auth'.`,
+        `Token refresh failed (HTTP ${response.status.toString()}). Please re-authenticate with 'front-mcp auth'.`,
       );
     }
 
-    const data = (await response.json()) as TokenResponse;
+    const data = await this.parseTokenResponse(response);
     await this.storeTokens(data);
+  }
+
+  private async parseTokenResponse(response: Response): Promise<TokenResponse> {
+    let json: unknown;
+    try {
+      json = await response.json();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "invalid JSON";
+      throw new Error(`Token endpoint returned non-JSON response: ${message}`);
+    }
+    const result = TokenResponseSchema.safeParse(json);
+    if (!result.success) {
+      throw new Error(
+        "Token endpoint returned an unexpected payload (missing access_token or refresh_token).",
+      );
+    }
+    return result.data;
   }
 
   private async storeTokens(data: TokenResponse): Promise<void> {
     const now = Date.now();
+    // Front documents access tokens at 60 minutes; honor `expires_in` when
+    // present (in seconds) so we don't desync if Front changes the lifetime.
+    const accessLifetimeMs = typeof data.expires_in === "number" && data.expires_in > 0
+      ? data.expires_in * 1000
+      : ACCESS_TOKEN_LIFETIME_MS;
     this.tokens = {
       access_token: data.access_token,
       refresh_token: data.refresh_token,
-      expires_at: now + ACCESS_TOKEN_LIFETIME_MS,
+      expires_at: now + accessLifetimeMs,
       refresh_expires_at: now + REFRESH_TOKEN_LIFETIME_MS,
     };
     await saveTokens(this.tokens);
