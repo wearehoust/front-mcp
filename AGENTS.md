@@ -98,3 +98,36 @@ npm run smoke
 - Verify stable behavior with mocks; never substitute live Front operations for missing tests.
 - State which gates ran, whether generated docs changed, and which live/provider checks were not run.
 - Security reports follow `SECURITY.md`; do not disclose vulnerabilities in a public issue.
+
+## Agent workflow and capability preflight
+
+- Start by reading the applicable `AGENTS.md` and `CLAUDE.md`, the exact base and diff, and the repository manifests, lockfiles, CI configuration, and declared commands.
+- Select the smallest useful capability set. Classify CLIs, LSPs, Skills, MCPs, and provider access as required, conditional, optional, or prohibited before using them.
+- Check that a selected capability is already available and healthy. Do not install, upgrade, authenticate, start brokers, or change configuration automatically except where a more-specific instruction explicitly permits one bounded bootstrap or interactive attempt; never retry or broaden that exception. Otherwise report an unavailable prerequisite and use a safe fallback only when the repository documents one.
+- Repository-declared commands are the verification authority. LSP diagnostics help navigation and focused feedback but never replace the repository's test, lint, type, or build gates.
+- For Houst ownership, consumer, or delivery decisions, use the shared `houst-engineering` Skill when available; newer evidenced repository-local facts override its map. For third-party surfaces, use an available current-documentation capability before writing against them.
+- Use configured provider/MCP access for private operational evidence only when it materially helps, default to read-only, health-check the existing connection first, and never create a duplicate integration.
+- Work in a bounded loop: plan ownership and dependencies; the orchestrator delegates only independent work with disjoint files and one integration owner; execute a small batch; run focused verification; adversarially review the diff; simplify; then repeat until the applicable gates pass or a real blocker is evidenced.
+- Adversarial review must try to refute correctness, safety, and completeness. Verify agent conclusions against source and command output; never accept a subagent report as the gate itself.
+- If a check fails or evidence conflicts, diagnose the cause and update the plan. Do not bypass a gate, weaken a test, or broaden the change merely to obtain a pass.
+
+## Repository capability matrix
+
+| Capability | Classification | Repository use and boundary |
+| --- | --- | --- |
+| CLI/runtime | Required | Use Node 20 or newer with npm and the committed lockfile. The source-declared gates are `npm run lint`, `npm run type-check`, `npm test`, `npm run build`, and then `npm run smoke`. |
+| LSP | Conditional | When available, use a TypeScript LSP for navigation and focused diagnostics. It does not replace strict compilation, lint, Vitest, build, or smoke checks. |
+| Skills | Conditional | When available, use `find-docs` for current MCP, Front API, Zod, or TypeScript documentation and `code-review` for cross-layer policy and request tracing. Otherwise use repository source and manual adversarial review. |
+| MCP/provider | Conditional, read-only | Use an already-configured Front connection only when private operational evidence is explicitly in scope, after a health/auth check and with narrowly bounded reads. |
+| Prohibited/high-impact | Prohibited unless explicitly authorized | Do not invoke Front mutations, live-test scripts, OAuth/token changes, policy weakening, release/version/tag/push/publication actions, or registry authentication automatically. |
+
+## Default-branch and publication gate
+
+- This gate applies before a direct default/release-branch push, merge, tag, package publication, deployment trigger, or equivalent external publication.
+- Require explicit authority for the exact repository, branch, and consequence. A plan, passing checks, or prior approval for a different candidate is not publication authority.
+- Fetch the live remote, confirm the current default branch and exact base SHA, and preserve unrelated user work. The candidate must be a clean, narrow diff based on that live head.
+- Run the repository-relevant tests, lint, type, build, generated-artifact, and migration checks. For an instruction-only change, record the docs-only exemption and run structural, link/path, whitespace, and diff checks instead of unrelated application suites.
+- Complete adversarial review and a simplicity pass; fix or explicitly adjudicate every material finding. If a PR exists, fetch all review comments, review bodies, and issue comments without time filters and address every human and bot finding.
+- Re-check deployment, migration, cron, provider, and publication consequences immediately before the mutation. CI success is not production-health evidence.
+- Fetch again immediately before publication. Proceed only as a fast-forward from the reviewed base; never force push or overwrite drift to make the candidate land.
+- After publication, verify the remote head and intended blobs match the reviewed candidate. Record checks not run, unavailable evidence, and any separate CI or production follow-up.
