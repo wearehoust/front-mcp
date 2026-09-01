@@ -8,6 +8,20 @@ import {
   type ActionTier,
 } from "./types.js";
 
+function canonicalStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value) ?? "null";
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((v) => canonicalStringify(v)).join(",")}]`;
+  }
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, v]) => v !== undefined)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${JSON.stringify(k)}:${canonicalStringify(v)}`);
+  return `{${entries.join(",")}}`;
+}
+
 const DEFAULT_DECISIONS: Record<ActionTier, PolicyDecision> = {
   read: "allow",
   write: "confirm",
@@ -15,6 +29,10 @@ const DEFAULT_DECISIONS: Record<ActionTier, PolicyDecision> = {
 };
 
 const CONFIRMATION_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// Hard ceiling on the pending-confirmations map. A long-running server that
+// receives many distinct confirm-tier calls would otherwise grow this map
+// without bound (TTL pruning happens lazily on evaluate()).
+const MAX_PENDING_CONFIRMATIONS = 1000;
 
 interface PendingConfirmation {
   expiresAt: number;
@@ -45,6 +63,8 @@ export class PolicyEngine {
     }
 
     if (decision === "confirm") {
+      this.pruneExpiredConfirmations();
+
       const confirmParam = params?.["confirm"];
       if (confirmParam === true) {
         // Only allow if there's a valid pending confirmation from a prior call
@@ -59,6 +79,13 @@ export class PolicyEngine {
 
       // Store pending confirmation and require a second call
       const key = this.confirmationKey(tool, action, params);
+      // FIFO eviction if we somehow exceed the cap even after pruning. Map
+      // iteration order in JS is insertion order, so the first key is oldest.
+      while (this.pendingConfirmations.size >= MAX_PENDING_CONFIRMATIONS) {
+        const oldest = this.pendingConfirmations.keys().next().value;
+        if (oldest === undefined) break;
+        this.pendingConfirmations.delete(oldest);
+      }
       this.pendingConfirmations.set(key, {
         expiresAt: Date.now() + CONFIRMATION_TTL_MS,
       });
@@ -71,6 +98,15 @@ export class PolicyEngine {
     }
 
     return { decision: "allow", tier };
+  }
+
+  private pruneExpiredConfirmations(): void {
+    const now = Date.now();
+    for (const [key, pending] of this.pendingConfirmations) {
+      if (pending.expiresAt <= now) {
+        this.pendingConfirmations.delete(key);
+      }
+    }
   }
 
   private resolveDecision(
@@ -127,15 +163,18 @@ export class PolicyEngine {
     action: string,
     params?: Record<string, unknown>,
   ): string {
-    // Create a deterministic key for the confirmation
-    const paramStr = params !== undefined
-      ? Object.entries(params)
-          .filter(([k]) => k !== "confirm")
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([k, v]) => `${k}=${String(v)}`)
-          .join("&")
-      : "";
-    return `${tool}.${action}:${paramStr}`;
+    // Canonicalize params so the key is invariant under property ordering.
+    // String(v) collapsed objects to "[object Object]" — every distinct call
+    // with object args mapped to the same key, so the second `confirm: true`
+    // call could match a different operation's pending confirmation.
+    if (params === undefined) {
+      return `${tool}.${action}:`;
+    }
+    const filtered: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(params)) {
+      if (k !== "confirm") filtered[k] = v;
+    }
+    return `${tool}.${action}:${canonicalStringify(filtered)}`;
   }
 
   private buildConfirmMessage(

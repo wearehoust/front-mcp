@@ -40,8 +40,25 @@ async function handleAuth(config: ReturnType<typeof loadConfig>, logger: Logger)
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8")) as { version: string };
-const VERSION = pkg.version;
+function readPackageVersion(): string {
+  try {
+    const raw = readFileSync(join(__dirname, "..", "package.json"), "utf-8");
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      parsed !== null &&
+      typeof parsed === "object" &&
+      "version" in parsed &&
+      typeof (parsed as { version: unknown }).version === "string"
+    ) {
+      return (parsed as { version: string }).version;
+    }
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+const VERSION = readPackageVersion();
 
 const HELP_TEXT = `front-mcp — Secure MCP server for the Front Platform API
 

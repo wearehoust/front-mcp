@@ -4,6 +4,7 @@ import { server } from "../../mocks/server.js";
 import {
   FrontClient,
   ApiTokenAuth,
+  parseRetryAfter,
   type AuthProvider,
 } from "../../../src/client/front-client.js";
 import { RateLimiter } from "../../../src/client/rate-limiter.js";
@@ -251,5 +252,37 @@ describe("FrontClient", () => {
       await client.get("/me");
       expect(capturedAuth).toBe("Bearer new_token_456");
     });
+  });
+});
+
+describe("parseRetryAfter", () => {
+  it("returns undefined for null/empty/whitespace headers", () => {
+    expect(parseRetryAfter(null)).toBeUndefined();
+    expect(parseRetryAfter("")).toBeUndefined();
+    expect(parseRetryAfter("   ")).toBeUndefined();
+  });
+
+  it("parses delta-seconds form", () => {
+    expect(parseRetryAfter("0")).toBe(0);
+    expect(parseRetryAfter("30")).toBe(30);
+    expect(parseRetryAfter("  120  ")).toBe(120);
+  });
+
+  it("parses HTTP-date form into seconds-from-now", () => {
+    const future = new Date(Date.now() + 90 * 1000).toUTCString();
+    const seconds = parseRetryAfter(future);
+    expect(seconds).toBeDefined();
+    // Allow ±2s slop for test timing
+    expect(seconds).toBeGreaterThanOrEqual(88);
+    expect(seconds).toBeLessThanOrEqual(91);
+  });
+
+  it("clamps past HTTP-date to 0 instead of negative", () => {
+    const past = new Date(Date.now() - 60_000).toUTCString();
+    expect(parseRetryAfter(past)).toBe(0);
+  });
+
+  it("returns undefined for non-numeric, non-date garbage", () => {
+    expect(parseRetryAfter("not-a-date-or-number")).toBeUndefined();
   });
 });
