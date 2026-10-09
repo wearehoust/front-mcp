@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- `conversations.add_tag` now POSTs Front's required `TagIds` body (`{ "tag_ids": ["tag_xxx"] }`) instead of `{ "tag_id": "tag_xxx" }`, which caused `POST /conversations/{id}/tags` to return "Body did not satisfy requirements". The MCP tool still accepts singular `tag_id` from callers.
+
 ## [1.0.0] - 2026-04-03
 
 ### Added

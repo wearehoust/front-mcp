@@ -292,7 +292,7 @@ export class ConversationsService {
   async addTag(params: Extract<ConversationsParams, { action: "add_tag" }>): Promise<Record<string, never>> {
     return this.client.post<Record<string, never>>(
       `/conversations/${params.conversation_id}/tags`,
-      { tag_id: params.tag_id },
+      { tag_ids: [params.tag_id] },
     );
   }
 
