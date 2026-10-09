@@ -237,13 +237,13 @@ The project includes 519 unit/integration tests and a 172-action live API test s
 
 ## Release Process
 
-1. Update version in `package.json` and `server.json`
-2. Update `CHANGELOG.md`
-3. Commit: `git commit -m "chore: release vX.Y.Z"`
-4. Tag: `git tag vX.Y.Z`
-5. Push: `git push origin main --tags`
-6. GitHub Actions publishes to npm (requires `NPM_TOKEN` secret)
-7. Publish to MCP Registry: `mcp-publisher publish`
+1. Update `package.json` and `package-lock.json` with `npm version X.Y.Z --no-git-tag-version`. Update both version fields in `server.json`, the server version in `src/server.ts`, and `CHANGELOG.md`.
+2. Confirm npm trusted publishing is configured for `wearehoust/front-mcp` and the `release.yml` workflow. The release workflow uses GitHub OIDC for npm and the MCP Registry.
+3. Run `npm ci`, lint, type-check, tests, build, and smoke. Check the packed npm artifact and its MCP handshake version.
+4. Commit as `chore: release vX.Y.Z`, open a PR, and merge after CI and review pass.
+5. Fetch main and create an annotated `vX.Y.Z` tag on the verified release commit. Push only that tag with `git push origin refs/tags/vX.Y.Z`.
+6. GitHub Actions verifies version metadata, runs the checks, publishes the npm package, and then publishes `server.json` to the MCP Registry.
+7. Verify both registries report the new version and smoke-test the published npm package.
 
 ## Security
 
