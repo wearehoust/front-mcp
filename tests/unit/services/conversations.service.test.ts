@@ -5,6 +5,7 @@ import { FrontClient, ApiTokenAuth } from "../../../src/client/front-client.js";
 import { RateLimiter } from "../../../src/client/rate-limiter.js";
 import { Logger } from "../../../src/utils/logger.js";
 import { ConversationsService } from "../../../src/services/conversations.service.js";
+import { ConversationsParamsSchema } from "../../../src/schemas/conversations.schema.js";
 
 const BASE = "https://api2.frontapp.com";
 
@@ -544,7 +545,7 @@ describe("ConversationsService", () => {
   // ---------------------------------------------------------------------------
 
   describe("add_tag", () => {
-    it("posts tag_id to the tags endpoint", async () => {
+    it("posts Front TagIds body while accepting singular tag_id", async () => {
       let capturedBody: unknown;
       server.use(
         http.post(`${BASE}/conversations/cnv_1/tags`, async ({ request }) => {
@@ -560,7 +561,27 @@ describe("ConversationsService", () => {
         confirm: true,
       });
 
-      expect(capturedBody).toEqual({ tag_id: "tag_1" });
+      expect(capturedBody).toEqual({ tag_ids: ["tag_1"] });
+    });
+
+    it("keeps the MCP add_tag contract as singular tag_id", () => {
+      const parsed = ConversationsParamsSchema.parse({
+        action: "add_tag",
+        conversation_id: "cnv_1",
+        tag_id: "tag_1",
+        confirm: true,
+      });
+
+      expect(parsed).toMatchObject({ tag_id: "tag_1" });
+      expect(parsed).not.toHaveProperty("tag_ids");
+      expect(
+        ConversationsParamsSchema.safeParse({
+          action: "add_tag",
+          conversation_id: "cnv_1",
+          tag_ids: ["tag_1"],
+          confirm: true,
+        }).success,
+      ).toBe(false);
     });
   });
 

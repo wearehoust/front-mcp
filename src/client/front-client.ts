@@ -4,6 +4,27 @@ import { Logger } from "../utils/logger.js";
 
 const BASE_URL = "https://api2.frontapp.com";
 
+// Per RFC 7231 §7.1.3, Retry-After is either a delta-seconds integer or an
+// HTTP-date. A naive parseInt() returns NaN for HTTP-date values, which
+// silently passes through to setTimeout(NaN) and disables backoff.
+export function parseRetryAfter(header: string | null): number | undefined {
+  if (header === null) return undefined;
+  const trimmed = header.trim();
+  if (trimmed.length === 0) return undefined;
+
+  // delta-seconds form
+  if (/^\d+$/.test(trimmed)) {
+    const seconds = parseInt(trimmed, 10);
+    return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined;
+  }
+
+  // HTTP-date form
+  const dateMs = Date.parse(trimmed);
+  if (Number.isNaN(dateMs)) return undefined;
+  const seconds = Math.max(0, Math.ceil((dateMs - Date.now()) / 1000));
+  return seconds;
+}
+
 export interface FrontClientOptions {
   rateLimiter: RateLimiter;
   retryOptions?: Partial<RetryOptions>;
@@ -154,10 +175,7 @@ export class FrontClient {
           errorBody._error?.message ?? `HTTP ${response.status}`;
 
         const retryAfterHeader = response.headers.get("retry-after");
-        const retryAfter =
-          retryAfterHeader !== null
-            ? parseInt(retryAfterHeader, 10)
-            : undefined;
+        const retryAfter = parseRetryAfter(retryAfterHeader);
 
         throw new FrontApiError(
           `Front API error: ${frontMessage} (${response.status})`,

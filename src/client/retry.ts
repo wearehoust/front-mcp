@@ -11,6 +11,8 @@ const DEFAULT_OPTIONS: RetryOptions = {
 };
 
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+// Larger Node timer delays overflow to an almost immediate retry.
+const MAX_TIMER_DELAY_MS = 2147483647;
 
 export class FrontApiError extends Error {
   constructor(
@@ -53,14 +55,15 @@ function calculateBackoff(
   options: RetryOptions,
   retryAfterMs?: number,
 ): number {
-  if (retryAfterMs !== undefined && retryAfterMs > 0) {
+  const maxDelay = Math.min(options.backoffMaxMs, MAX_TIMER_DELAY_MS);
+  if (retryAfterMs !== undefined && retryAfterMs > 0 && retryAfterMs <= maxDelay) {
     return retryAfterMs;
   }
 
   // Exponential backoff with jitter
   const exponentialDelay = options.backoffBaseMs * Math.pow(2, attempt);
   const jitter = Math.random() * options.backoffBaseMs;
-  return Math.min(exponentialDelay + jitter, options.backoffMaxMs);
+  return Math.min(exponentialDelay + jitter, maxDelay);
 }
 
 export async function withRetry<T>(
