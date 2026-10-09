@@ -70,7 +70,7 @@ export function createServer(
   config: Config,
 ): Server {
   const server = new Server(
-    { name: "front-mcp-server", version: "1.0.0" },
+    { name: "front-mcp-server", version: "1.1.1" },
     { capabilities: { tools: {} } },
   );
 

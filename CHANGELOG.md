@@ -7,9 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-09
+
 ### Fixed
 
 - `conversations.add_tag` now POSTs Front's required `TagIds` body (`{ "tag_ids": ["tag_xxx"] }`) instead of `{ "tag_id": "tag_xxx" }`, which caused `POST /conversations/{id}/tags` to return "Body did not satisfy requirements". The MCP tool still accepts singular `tag_id` from callers.
+- Validate OAuth token responses and stored tokens, share concurrent refreshes, and consume each loopback callback only once.
+- Write token files atomically with owner-only permissions and clean up temporary OAuth certificates.
+- Match confirmations consistently, preserve existing entries at capacity, and prune expired entries.
+- Parse numeric and HTTP-date `Retry-After` values and bound delays to the configured ceiling and Node timer limit.
+- Report the released server version in the MCP handshake and tolerate missing CLI version metadata.
+
+### Changed
+
+- Update transitive dependencies and upgrade Vitest to 4.1.9.
+- Use a current Node/npm runtime for trusted publishing and verify release metadata before publication.
 
 ## [1.0.0] - 2026-04-03
 
