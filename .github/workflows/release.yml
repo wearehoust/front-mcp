@@ -30,9 +30,14 @@ jobs:
           const pkg = require('./package.json');
           const lock = require('./package-lock.json');
           const server = require('./server.json');
-          const versions = [pkg.version, lock.version, lock.packages[''].version, server.version, ...server.packages.map(p => p.version)];
+          const source = require('node:fs').readFileSync('./src/server.ts', 'utf8');
+          const handshake = source.match(/name:\s*"front-mcp-server",\s*version:\s*"([^"]+)"/)?.[1];
+          if (!handshake) {
+            throw new Error('Could not read MCP handshake version');
+          }
+          const versions = [pkg.version, lock.version, lock.packages[''].version, server.version, ...server.packages.map(p => p.version), handshake];
           if (versions.some(version => version !== expected)) {
-            throw new Error('Release tag and package/registry versions must match');
+            throw new Error('Release tag and package/registry/handshake versions must match');
           }
           NODE
 
