@@ -139,6 +139,7 @@ export class OAuthManager implements AuthProvider {
       const expectedStateBuf = Buffer.from(expectedState, "utf-8");
 
       let settled = false;
+      let exchangingCode = false;
       const finish = (fn: () => void): void => {
         if (settled) return;
         settled = true;
@@ -157,6 +158,12 @@ export class OAuthManager implements AuthProvider {
           if (url.pathname !== "/callback") {
             res.writeHead(404, { "Content-Type": "text/plain" });
             res.end("Not found");
+            return;
+          }
+
+          if (settled || exchangingCode) {
+            res.writeHead(409, { "Content-Type": "text/plain" });
+            res.end("OAuth callback already handled");
             return;
           }
 
@@ -198,6 +205,7 @@ export class OAuthManager implements AuthProvider {
             return;
           }
 
+          exchangingCode = true;
           res.writeHead(200, { "Content-Type": "text/html" });
           res.end(
             "<h1>Authentication Successful!</h1><p>You can close this window and return to the terminal.</p>",
