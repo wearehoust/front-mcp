@@ -4,6 +4,7 @@ import {
   FrontApiError,
   NetworkError,
 } from "../../../src/client/retry.js";
+import { parseRetryAfter } from "../../../src/client/front-client.js";
 
 describe("Retry Engine", () => {
   beforeEach(() => {
@@ -11,6 +12,7 @@ describe("Retry Engine", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
@@ -131,6 +133,41 @@ describe("Retry Engine", () => {
 
     expect(result).toBe("ok");
     expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    { format: "numeric", seconds: 120 },
+    { format: "HTTP-date", seconds: 120 },
+    { format: "numeric", seconds: 2147484 },
+    { format: "HTTP-date", seconds: 2147484 },
+  ])("uses bounded backoff for $format Retry-After of $seconds seconds", async ({ format, seconds }) => {
+    vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const header = format === "numeric"
+      ? String(seconds)
+      : new Date(Date.now() + seconds * 1000).toUTCString();
+    const fn = vi.fn()
+      .mockRejectedValueOnce(new FrontApiError("rate limited", 429, "Too Many Requests", parseRetryAfter(header)))
+      .mockResolvedValueOnce("ok");
+
+    const promise = withRetry(fn, { backoffBaseMs: 1000, backoffMaxMs: 60000 });
+    await vi.advanceTimersByTimeAsync(999);
+    expect(fn).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fn).toHaveBeenCalledTimes(2);
+    await expect(promise).resolves.toBe("ok");
+  });
+
+  it("caps configured backoff at the timer limit", async () => {
+    const fn = vi.fn()
+      .mockRejectedValueOnce(new NetworkError("connection reset"))
+      .mockResolvedValueOnce("ok");
+    const promise = withRetry(fn, { backoffBaseMs: 3e9, backoffMaxMs: 3e9 });
+    await vi.advanceTimersByTimeAsync(2147483646);
+    expect(fn).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fn).toHaveBeenCalledTimes(2);
+    await expect(promise).resolves.toBe("ok");
   });
 
   it("retries on 502, 503, 504", async () => {

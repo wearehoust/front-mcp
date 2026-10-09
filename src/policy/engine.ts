@@ -15,7 +15,7 @@ function canonicalStringify(value: unknown): string {
   if (Array.isArray(value)) {
     return `[${value.map((v) => canonicalStringify(v)).join(",")}]`;
   }
-  const entries = Object.entries(value as Record<string, unknown>)
+  const entries = Object.entries(value)
     .filter(([, v]) => v !== undefined)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${JSON.stringify(k)}:${canonicalStringify(v)}`);
@@ -81,7 +81,7 @@ export class PolicyEngine {
       const key = this.confirmationKey(tool, action, params);
       // FIFO eviction if we somehow exceed the cap even after pruning. Map
       // iteration order in JS is insertion order, so the first key is oldest.
-      while (this.pendingConfirmations.size >= MAX_PENDING_CONFIRMATIONS) {
+      while (!this.pendingConfirmations.has(key) && this.pendingConfirmations.size >= MAX_PENDING_CONFIRMATIONS) {
         const oldest = this.pendingConfirmations.keys().next().value;
         if (oldest === undefined) break;
         this.pendingConfirmations.delete(oldest);
@@ -167,11 +167,8 @@ export class PolicyEngine {
     // String(v) collapsed objects to "[object Object]" — every distinct call
     // with object args mapped to the same key, so the second `confirm: true`
     // call could match a different operation's pending confirmation.
-    if (params === undefined) {
-      return `${tool}.${action}:`;
-    }
     const filtered: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(params)) {
+    for (const [k, v] of Object.entries(params ?? {})) {
       if (k !== "confirm") filtered[k] = v;
     }
     return `${tool}.${action}:${canonicalStringify(filtered)}`;

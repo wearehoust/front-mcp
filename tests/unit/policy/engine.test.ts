@@ -196,6 +196,12 @@ describe("PolicyEngine", () => {
   });
 
   describe("confirmation key canonicalization", () => {
+    it("matches an omitted parameter object with a parameterless confirmation", () => {
+      const engine = new PolicyEngine();
+      expect(engine.evaluate("conversations", "create").decision).toBe("confirm");
+      expect(engine.evaluate("conversations", "create", { confirm: true }).decision).toBe("allow");
+    });
+
     it("matches confirmations regardless of object key ordering", () => {
       const engine = new PolicyEngine();
 
@@ -235,6 +241,15 @@ describe("PolicyEngine", () => {
   });
 
   describe("pending confirmation cleanup", () => {
+    it("keeps unrelated confirmations when refreshing an existing key at capacity", () => {
+      const engine = new PolicyEngine();
+      for (let i = 0; i < 1000; i++) {
+        engine.evaluate("conversations", "create", { subject: String(i) });
+      }
+      engine.evaluate("conversations", "create", { subject: "999" });
+      expect(engine.evaluate("conversations", "create", { subject: "0", confirm: true }).decision).toBe("allow");
+    });
+
     it("prunes expired confirmations on subsequent evaluate calls", () => {
       vi.useFakeTimers();
       try {
@@ -248,6 +263,7 @@ describe("PolicyEngine", () => {
 
         // Trigger a new evaluate that should prune the expired entry
         engine.evaluate("conversations", "create", { action: "create", subject: "B" });
+        expect(engine["pendingConfirmations"].size).toBe(1);
 
         // The confirm bypass for the original entry must no longer succeed
         const result = engine.evaluate("conversations", "create", {
