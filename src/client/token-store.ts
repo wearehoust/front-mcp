@@ -4,10 +4,11 @@ import {
   randomBytes,
   pbkdf2Sync,
 } from "node:crypto";
-import { readFileSync, writeFileSync, unlinkSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, unlinkSync, existsSync, mkdirSync, renameSync } from "node:fs";
 import { chmod, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir, hostname, userInfo } from "node:os";
+import { z } from "zod";
 
 const ALGORITHM = "aes-256-gcm";
 const KEY_LENGTH = 32;
@@ -23,17 +24,26 @@ export interface StoredTokens {
   refresh_expires_at: number;
 }
 
-interface EncryptedFile {
-  version: number;
-  encrypted: boolean;
-  algorithm: string;
-  data: string;
-  iv: string;
-  tag: string;
-  salt: string;
-  created_at: string;
-  refresh_expires_at: string;
-}
+const StoredTokensSchema = z.object({
+  access_token: z.string().min(1),
+  refresh_token: z.string().min(1),
+  expires_at: z.number().int().nonnegative(),
+  refresh_expires_at: z.number().int().nonnegative(),
+});
+
+const EncryptedFileSchema = z.object({
+  version: z.literal(1),
+  encrypted: z.literal(true),
+  algorithm: z.string(),
+  data: z.string(),
+  iv: z.string(),
+  tag: z.string(),
+  salt: z.string(),
+  created_at: z.string(),
+  refresh_expires_at: z.string(),
+});
+
+type EncryptedFile = z.infer<typeof EncryptedFileSchema>;
 
 function getTokenDir(): string {
   const xdgConfig = process.env["XDG_CONFIG_HOME"];
@@ -58,7 +68,9 @@ function deriveKey(salt: Buffer, passphrase?: string): Buffer {
 export async function saveTokens(tokens: StoredTokens, passphrase?: string): Promise<void> {
   const dir = getTokenDir();
   if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
+    // 0o700 — directory is owner-only. Existing dir perms left alone to avoid
+    // surprising users who manage ~/.front-mcp/ for other config.
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
   }
 
   const salt = randomBytes(SALT_LENGTH);
@@ -86,7 +98,19 @@ export async function saveTokens(tokens: StoredTokens, passphrase?: string): Pro
   };
 
   const tokenPath = getTokenPath();
-  writeFileSync(tokenPath, JSON.stringify(file, null, 2), "utf-8");
+  // Atomic write: create temp file with 0600 perms, then rename. This ensures
+  // the file never exists with permissive defaults (e.g. 0644 from umask),
+  // and a crash mid-write can't leave a half-written tokens.enc.
+  const tmpPath = `${tokenPath}.${process.pid.toString()}.${randomBytes(6).toString("hex")}.tmp`;
+  writeFileSync(tmpPath, JSON.stringify(file, null, 2), { encoding: "utf-8", mode: 0o600 });
+  try {
+    renameSync(tmpPath, tokenPath);
+  } catch (err) {
+    try { unlinkSync(tmpPath); } catch { /* best-effort cleanup */ }
+    throw err;
+  }
+  // Defense-in-depth: re-assert 0600 in case the rename preserved a previous
+  // file's mode on some platforms.
   await chmod(tokenPath, 0o600);
 }
 
@@ -96,10 +120,27 @@ export async function loadTokens(passphrase?: string): Promise<StoredTokens | nu
     return null;
   }
 
-  const raw = readFileSync(tokenPath, "utf-8");
-  const file = JSON.parse(raw) as EncryptedFile;
+  let raw: string;
+  try {
+    raw = readFileSync(tokenPath, "utf-8");
+  } catch {
+    return null;
+  }
 
-  if (file.version !== 1 || !file.encrypted) {
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+
+  const fileResult = EncryptedFileSchema.safeParse(parsedJson);
+  if (!fileResult.success) {
+    return null;
+  }
+  const file = fileResult.data;
+
+  if (file.algorithm !== ALGORITHM) {
     return null;
   }
 
@@ -109,6 +150,7 @@ export async function loadTokens(passphrase?: string): Promise<StoredTokens | nu
   const data = Buffer.from(file.data, "base64");
   const key = deriveKey(salt, passphrase);
 
+  let decryptedJson: unknown;
   try {
     const decipher = createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(tag);
@@ -116,11 +158,16 @@ export async function loadTokens(passphrase?: string): Promise<StoredTokens | nu
       decipher.update(data),
       decipher.final(),
     ]);
-
-    return JSON.parse(decrypted.toString("utf-8")) as StoredTokens;
+    decryptedJson = JSON.parse(decrypted.toString("utf-8"));
   } catch {
     return null;
   }
+
+  const tokensResult = StoredTokensSchema.safeParse(decryptedJson);
+  if (!tokensResult.success) {
+    return null;
+  }
+  return tokensResult.data;
 }
 
 export function clearTokens(): void {
