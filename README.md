@@ -8,13 +8,13 @@
 [![MCP](https://img.shields.io/badge/MCP-26_tools-green)](docs/TOOL_REFERENCE.md)
 [![Front API](https://img.shields.io/badge/Front_API-172_actions-orange)](https://dev.frontapp.com/reference)
 
-Use Front from any MCP-compatible client. Search conversations, manage contacts, send messages, tag, assign, and automate inbox workflows — 26 tools, 172 actions.
+Use Front from MCP clients that support local stdio servers. Search conversations, manage contacts, send messages, tag, assign, and automate inbox workflows — 26 tools, 172 actions.
 
 ## Quick Start
 
 1. Get a Front API token from **Settings > Developers > API tokens**.
 
-2. Add to your Claude Code settings (`~/.claude/settings.json`):
+2. Add this server to the top-level `mcpServers` object in your Claude Code user configuration (`~/.claude.json`), preserving any existing settings and servers. For a shared project configuration, use `.mcp.json` instead. See [Claude Code's MCP configuration guide](https://code.claude.com/docs/en/mcp#scope-hierarchy-and-precedence).
 
 ```json
 {
@@ -31,6 +31,8 @@ Use Front from any MCP-compatible client. Search conversations, manage contacts,
 ```
 
 3. Start Claude Code. The Front tools are now available.
+
+Node.js 20 or newer is required. The server runs locally using your own Front credentials; no Houst-hosted service is required. Keep API tokens out of version control; shared `.mcp.json` files should use `"FRONT_API_TOKEN": "${FRONT_API_TOKEN}"` and set that variable in the environment that launches Claude Code.
 
 ## Example Workflows
 
@@ -242,8 +244,10 @@ The project includes 519 unit/integration tests and a 172-action live API test s
 3. Run `npm ci`, lint, type-check, tests, build, and smoke. Check the packed npm artifact and its MCP handshake version.
 4. Commit as `chore: release vX.Y.Z`, open a PR, and merge after CI and review pass.
 5. Fetch main and create an annotated `vX.Y.Z` tag on the verified release commit. Push only that tag with `git push origin refs/tags/vX.Y.Z`.
-6. GitHub Actions verifies version metadata, runs the checks, publishes the npm package, and then publishes `server.json` to the MCP Registry.
+6. GitHub Actions verifies version metadata, runs the checks, publishes the npm package, and then publishes `server.json` to the MCP Registry in a separate job. Registration retries briefly when the registry cannot yet see the new npm version.
 7. Verify both registries report the new version and smoke-test the published npm package.
+
+If npm publication succeeds but registry registration fails, use **Re-run failed jobs** to retry only the registry job. For recovery of an older release (including workflows that used a single publish job), open **Actions → Release → Run workflow** on `main` and enter the existing tag, such as `v1.1.1`. This manual action only registers the tagged `server.json`; it never republishes npm or changes the tag. The recovery workflow must first be merged into `main`.
 
 ## Security
 
